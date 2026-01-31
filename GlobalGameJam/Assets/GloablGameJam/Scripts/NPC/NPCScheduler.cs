@@ -8,6 +8,8 @@ namespace GloablGameJam.Scripts.NPC
 {
     public sealed class NPCScheduler : MonoBehaviour, INPCScheduler
     {
+        public static readonly List<NPCScheduler> All = new();
+
         private ICharacterManager _characterManager;
         private readonly Stack<SchedulerFrame> _interruptStack = new();
 
@@ -29,6 +31,16 @@ namespace GloablGameJam.Scripts.NPC
             IRebuildScheduleCache();
         }
 
+        private void OnEnable()
+        {
+            if (!All.Contains(this)) All.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            All.Remove(this);
+        }
+
         public void ISetCharacterManager(ICharacterManager characterManager)
         {
             _characterManager = characterManager;
@@ -45,14 +57,34 @@ namespace GloablGameJam.Scripts.NPC
 
         public void IRebuildScheduleCache()
         {
-            _scheduleItems = _scheduleItems.Where(x => x != null).ToList();
+            _scheduleItems = _scheduleItems.Where(x => x != null && x.IncludeInLoop).ToList();
             _maxClock = 0;
             for (var i = 0; i < _scheduleItems.Count; i++)
             {
                 var item = _scheduleItems[i];
-                var end = item.TriggerTime + Math.Max(1u, item.DurationTicks);
-                if (end > _maxClock) _maxClock = end;
+                var end = item.TriggerTime + Mathf.Max(1u, item.DurationTicks);
+                if (end > _maxClock) _maxClock = (uint) end;
             }
+        }
+
+        public bool ITryInterruptInvestigate(Vector3 point, bool replaceCurrent = false)
+        {
+            var interrupt = GetComponentInChildren<NPCInvestigatePointInterrupt>(includeInactive: true);
+            if (interrupt == null) return false;
+
+            interrupt.SetInvestigatePoint(point);
+            IInterrupt(interrupt, replaceCurrent);
+            return true;
+        }
+
+        public bool ITryInterruptChase(CharacterManager target, bool replaceCurrent = true)
+        {
+            var chase = GetComponentInChildren<NPCChaseTargetInterrupt>(includeInactive: true);
+            if (chase == null) return false;
+
+            chase.SetTarget(target);
+            IInterrupt(chase, replaceCurrent);
+            return true;
         }
 
         public void IInterrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)

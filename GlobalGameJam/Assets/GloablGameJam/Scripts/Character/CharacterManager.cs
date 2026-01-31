@@ -22,10 +22,12 @@ namespace GloablGameJam.Scripts.Character
         private NavMeshAgent _agent;
 
         private float _nextAllowedMaskSwapTime;
+        private float _stunUntilTime;
 
         [Header("Character Settings")]
         [SerializeField] private CharacterID _characterID;
         [SerializeField] private CharacterState _characterState;
+        [SerializeField, Min(0f)] private float _stunSecondsDefault = 2.0f;
 
         [SerializeField] private GameObject _maskObject;
 
@@ -63,20 +65,33 @@ namespace GloablGameJam.Scripts.Character
         private void Update()
         {
             if (_characterState != CharacterState.NPCControlled) return;
-            if (ITryGetCharacterComponent<NPCScheduler>(out var scheduler)) scheduler.IHandleCharacterComponent();
+
+            if (ITryGetCharacterComponent<NPCScheduler>(out var scheduler))
+            {
+                scheduler.IHandleCharacterComponent();
+            }
+
+            if (ITryGetCharacterComponent<GloablGameJam.Scripts.NPC.NPCPerception>(out var perception))
+            {
+                perception.IHandleCharacterComponent();
+            }
         }
 
         private void FixedUpdate()
         {
             if (_characterState != CharacterState.PlayerControlled) return;
+            if (IIsStunned()) return;
             if (ITryGetCharacterComponent<PlayerMovement>(out var movement)) movement.IHandleCharacterComponent();
         }
 
         private void LateUpdate()
         {
             if (_characterState != CharacterState.PlayerControlled) return;
+            if (IIsStunned()) return;
             if (ITryGetCharacterComponent<PlayerCamera>(out var camera)) camera.IHandleCharacterComponent();
         }
+
+        public CharacterState IGetCharacterState() => _characterState;
 
         public IAnimatorController IAnimatorController() => _animatorController;
 
@@ -94,6 +109,27 @@ namespace GloablGameJam.Scripts.Character
 
             value = null;
             return false;
+        }
+
+        public bool IIsStunned()
+        {
+            return Time.time < _stunUntilTime;
+        }
+
+        public void IStun(float seconds)
+        {
+            _stunUntilTime = Mathf.Max(_stunUntilTime, Time.time + Mathf.Max(0f, seconds));
+
+            if (_rigidbody != null)
+            {
+                _rigidbody.linearVelocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
+        }
+
+        public void IStunDefault()
+        {
+            IStun(_stunSecondsDefault);
         }
 
         public bool ICanBeMaskSwapped()
@@ -127,7 +163,7 @@ namespace GloablGameJam.Scripts.Character
                 _maskObject.SetActive(state == CharacterState.PlayerControlled);
             }
 
-            // Optional: avoid leftover physics motion when switching away from player control
+            // Avoid leftover physics motion when switching to NPC control.
             if (npc && _rigidbody != null)
             {
                 _rigidbody.linearVelocity = Vector3.zero;

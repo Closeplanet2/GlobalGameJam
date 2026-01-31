@@ -4,6 +4,7 @@ using CustomLibrary.Events.PlayerInputManager;
 using CustomLibrary.Scripts.GameEventSystem;
 using GloablGameJam.Scripts.Camera;
 using GloablGameJam.Scripts.Character;
+using GloablGameJam.Scripts.NPC;
 using GloablGameJam.Scripts.PlayerInputManager;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -18,16 +19,18 @@ namespace GloablGameJam.Scripts.Game
         private CharacterManager _currentPlayer;
         private Collider[] _currentPlayerColliders = Array.Empty<Collider>();
 
+        public CharacterManager CurrentPlayer => _currentPlayer;
+
         [Header("References")]
         [SerializeField] private CameraManager _cameraManager;
 
         [Header("Mask Swap")]
         [SerializeField, Min(0f)] private float _swapRange = 6f;
-
-        [Tooltip("Every character body collider must be on a layer included here.")]
         [SerializeField] private LayerMask _characterLayerMask = ~0;
-
         [SerializeField] private QueryTriggerInteraction _triggerInteraction = QueryTriggerInteraction.Ignore;
+
+        [Header("Swap Consequences")]
+        [SerializeField, Min(0f)] private float _leftBehindStunSeconds = 2.0f;
 
         protected override void Awake()
         {
@@ -35,13 +38,11 @@ namespace GloablGameJam.Scripts.Game
 
             if (_startingPlayer != null)
             {
-                // Ensure we begin as the player.
                 _startingPlayer.ISetCharacterState(CharacterState.PlayerControlled);
             }
 
             SetCurrentPlayer(_startingPlayer != null ? _startingPlayer : _currentPlayer);
 
-            // Keep cursor locked for FPS-style swapping.
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -68,8 +69,6 @@ namespace GloablGameJam.Scripts.Game
         {
             if (_cameraManager == null) return;
             if (_currentPlayer == null) return;
-
-            // Optional: prevent swapping while YOU are on cooldown too.
             if (!_currentPlayer.ICanBeMaskSwapped()) return;
 
             var cam = _cameraManager.IManagedCamera();
@@ -78,16 +77,40 @@ namespace GloablGameJam.Scripts.Game
             var ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             var target = FindTargetCharacter(ray);
             if (target == null) return;
-
             if (!target.ICanBeMaskSwapped()) return;
 
-            SwapControl(_currentPlayer, target);
+            var leftBehind = _currentPlayer;
 
-            // Mark both as swapped to prevent ping-pong.
-            _currentPlayer.IMarkMaskSwappedNow();
+            SwapControl(leftBehind, target);
+
+            // Stun last body
+            leftBehind.IStun(_leftBehindStunSeconds);
+
+            // Alert all NPCs to investigate that body
+            AlertAllNpcs(leftBehind.transform.position);
+
+            leftBehind.IMarkMaskSwappedNow();
             target.IMarkMaskSwappedNow();
-
             SetCurrentPlayer(target);
+        }
+
+        private void AlertAllNpcs(Vector3 pointOfInterest)
+        {
+            for (var i = 0; i < GloablGameJam.Scripts.NPC.NPCScheduler.All.Count; i++)
+            {
+                var scheduler = GloablGameJam.Scripts.NPC.NPCScheduler.All[i];
+                if (scheduler == null) continue;
+
+                var cm = scheduler.GetComponentInParent<CharacterManager>();
+                if (cm == null) continue;
+
+                if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
+
+                var perception = scheduler.GetComponent<GloablGameJam.Scripts.NPC.NPCPerception>();
+                if (perception != null) perception.ISetAlerted();
+
+                scheduler.ITryInterruptInvestigate(pointOfInterest, replaceCurrent: true);
+            }
         }
 
         private CharacterManager FindTargetCharacter(Ray ray)
@@ -99,21 +122,16 @@ namespace GloablGameJam.Scripts.Game
 
             for (var i = 0; i < hits.Length; i++)
             {
-                var h = hits[i];
-                var col = h.collider;
+                var col = hits[i].collider;
                 if (col == null) continue;
-
-                // Skip self colliders
                 if (IsSelfCollider(col)) continue;
 
                 var cm = col.GetComponentInParent<CharacterManager>();
                 if (cm == null) continue;
                 if (cm == _currentPlayer) continue;
 
-                // Optional safety: only allow swapping into NPC-controlled characters
-                // (prevents weirdness if multiple players exist).
-                // If you want swapping into any character, remove this check.
-                // if (cm.GetCharacterState() != CharacterState.NPCControlled) continue;
+                // Only swap into NPC-controlled targets.
+                if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
 
                 return cm;
             }
@@ -123,14 +141,11 @@ namespace GloablGameJam.Scripts.Game
 
         private bool IsSelfCollider(Collider col)
         {
-            if (col == null) return false;
-
             for (var i = 0; i < _currentPlayerColliders.Length; i++)
             {
                 if (_currentPlayerColliders[i] == col) return true;
             }
 
-            // Fallback for odd hierarchies
             var cm = col.GetComponentInParent<CharacterManager>();
             return cm != null && cm == _currentPlayer;
         }
@@ -142,6 +157,8 @@ namespace GloablGameJam.Scripts.Game
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-        }
+        }       
+
+        
     }
 }
