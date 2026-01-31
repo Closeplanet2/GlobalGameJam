@@ -9,12 +9,12 @@ namespace GloablGameJam.Scripts.NPC
         private NPCScheduler _scheduler;
 
         [Header("Alert")]
-        [SerializeField, Min(0f)] private float alertSeconds = 10f;
+        [SerializeField, Min(0f)] private float alertSeconds = 12f;
         private float _alertUntil;
 
         [Header("Sight")]
-        [SerializeField, Min(0f)] private float sightRange = 12f;
-        [SerializeField, Range(0f, 180f)] private float fovDegrees = 110f;
+        [SerializeField, Min(0f)] private float sightRange = 14f;
+        [SerializeField, Range(0f, 180f)] private float fovDegrees = 120f;
         [SerializeField] private LayerMask losMask = ~0;
 
         [Header("Proximity Aggro")]
@@ -28,6 +28,11 @@ namespace GloablGameJam.Scripts.NPC
         public void ISetCharacterManager(ICharacterManager characterManager)
         {
             _scheduler = GetComponent<NPCScheduler>();
+        }
+
+        public bool ICanSeeNow(CharacterManager target)
+        {
+            return CanSee(target);
         }
 
         public void ISetAlerted()
@@ -47,8 +52,8 @@ namespace GloablGameJam.Scripts.NPC
             var player = gm.CurrentPlayer;
             if (player == null) return;
 
-            // Proximity aggression
             var dist = Vector3.Distance(transform.position, player.transform.position);
+
             if (dist <= proximityRange)
             {
                 _proximityTimer += Time.deltaTime;
@@ -64,7 +69,6 @@ namespace GloablGameJam.Scripts.NPC
                 _proximityTimer = 0f;
             }
 
-            // LOS aggression
             if (CanSee(player))
             {
                 if (log) Debug.Log($"[Perception] {name} -> CHASE (LOS)", this);

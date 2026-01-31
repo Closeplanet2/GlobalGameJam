@@ -1,4 +1,5 @@
 using GloablGameJam.Scripts.Character;
+using GloablGameJam.Scripts.Combat;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -6,10 +7,13 @@ namespace GloablGameJam.Scripts.NPC
 {
     public sealed class NPCChaseTargetInterrupt : NPCScheduleItem, INPCInterruptItem
     {
+        private Vector3 _lastSetDestination;
+
         [Header("Chase")]
-        [SerializeField, Min(0f)] private float repathSeconds = 0.15f;
-        [SerializeField, Min(0f)] private float sightRange = 12f;
-        [SerializeField, Range(0f, 180f)] private float fovDegrees = 110f;
+        [SerializeField, Min(0f)] private float repathSeconds = 0.08f;
+        [SerializeField, Min(0f)] private float repathMinDelta = 0.35f; // meters
+        [SerializeField, Min(0f)] private float sightRange = 14f;
+        [SerializeField, Range(0f, 180f)] private float fovDegrees = 120f;
         [SerializeField] private LayerMask losMask = ~0;
 
         [Header("Lose Sight")]
@@ -17,8 +21,8 @@ namespace GloablGameJam.Scripts.NPC
 
         [Header("Attack")]
         [SerializeField, Min(0f)] private float attackRange = 1.8f;
-        [SerializeField, Min(0f)] private float attackCooldownSeconds = 1.0f;
-        [SerializeField, Min(0f)] private float attackDamage = 10f;
+        [SerializeField, Min(0f)] private float attackCooldownSeconds = 0.9f;
+        [SerializeField, Min(0f)] private float attackDamage = 20f;
 
         [Header("Debug")]
         [SerializeField] private bool log = true;
@@ -40,6 +44,7 @@ namespace GloablGameJam.Scripts.NPC
             _lostSightTimer = 0f;
             _hasLastSeen = false;
             _nextRepathAt = 0f;
+            _nextAttackAt = 0f;
         }
 
         public override void OnStart(ICharacterManager characterManager, uint clock)
@@ -49,7 +54,14 @@ namespace GloablGameJam.Scripts.NPC
             _scheduler = mb.GetComponentInChildren<NPCScheduler>();
             mb.TryGetComponent(out _agent);
 
-            if (log) Debug.Log($"[Chase] {mb.name} started chasing", mb);
+            if (_agent != null)
+            {
+                // Smooth pursuit feel
+                _agent.autoBraking = false;
+                _agent.isStopped = false;
+            }
+            var tuning = mb.GetComponent<NPCNavAgentTuning>();
+            if (tuning != null) tuning.SetRun();
         }
 
         public override void OnTick(ICharacterManager characterManager, uint clock)
@@ -59,6 +71,7 @@ namespace GloablGameJam.Scripts.NPC
             if (_agent == null || !_agent.enabled) return;
 
             var canSee = CanSeeTarget(mb.transform);
+
             if (canSee)
             {
                 _lostSightTimer = 0f;
@@ -70,30 +83,36 @@ namespace GloablGameJam.Scripts.NPC
                 _lostSightTimer += Time.deltaTime;
             }
 
-            // Chase destination: target if visible, otherwise last seen.
+            // Destination = target if visible else last seen
             var dest = canSee ? _target.transform.position : (_hasLastSeen ? _lastSeenPos : _target.transform.position);
 
             if (Time.time >= _nextRepathAt)
             {
                 _nextRepathAt = Time.time + repathSeconds;
-                _agent.isStopped = false;
-                _agent.SetDestination(dest);
+
+                var delta = dest - _lastSetDestination;
+                if (delta.sqrMagnitude >= repathMinDelta * repathMinDelta)
+                {
+                    _lastSetDestination = dest;
+                    _agent.SetDestination(dest);
+                }
             }
 
-            // Attack if close enough (only if we can see or are extremely close).
+            // Attack
             var dist = Vector3.Distance(mb.transform.position, _target.transform.position);
-            if (dist <= attackRange && Time.time >= _nextAttackAt && (canSee || dist <= attackRange * 0.75f))
+            if (dist <= attackRange && Time.time >= _nextAttackAt && (canSee || dist <= attackRange * 0.85f))
             {
                 _nextAttackAt = Time.time + attackCooldownSeconds;
 
-                // Minimal “drop-in” damage:
-                // If your CharacterManager doesn't have health, this will still compile by using SendMessage fallback.
-                TryDealDamage(_target, attackDamage);
-
-                if (log) Debug.Log($"[Chase] {mb.name} attacked {_target.name} for {attackDamage}", mb);
+                var hp = _target.GetComponent<GloablGameJam.Scripts.Combat.Health>();
+                if (hp != null && !hp.IsDead)
+                {
+                    hp.TakeDamage(hp.MaxHealth); // insta-kill
+                    if (log) Debug.Log($"[Chase] {mb.name} INSTA-KILLED {_target.name}", mb);
+                }
             }
 
-            // If we've lost sight for too long, go search last seen and end chase.
+            // Lose sight -> search last seen (investigate) then end chase
             if (_lostSightTimer >= loseSightGraceSeconds)
             {
                 if (_scheduler != null && _hasLastSeen)
@@ -101,7 +120,6 @@ namespace GloablGameJam.Scripts.NPC
                     _scheduler.ITryInterruptInvestigate(_lastSeenPos, replaceCurrent: true);
                 }
 
-                // End chase
                 _target = null;
             }
         }
@@ -115,7 +133,12 @@ namespace GloablGameJam.Scripts.NPC
         {
             if (characterManager is MonoBehaviour mb && log)
             {
-                Debug.Log($"[Chase] {mb.name} ended chase", mb);
+                Debug.Log($"[Chase] {mb.name} EXIT chase", mb);
+            }
+
+            if (_agent != null)
+            {
+                _agent.autoBraking = true;
             }
 
             _target = null;
@@ -144,15 +167,6 @@ namespace GloablGameJam.Scripts.NPC
             }
 
             return false;
-        }
-
-        private static void TryDealDamage(CharacterManager target, float damage)
-        {
-            if (target == null) return;
-
-            // Preferred: if you add a real health component later.
-            // For now: SendMessage is a safe "drop-in" hook.
-            target.gameObject.SendMessage("ITakeDamage", damage, SendMessageOptions.DontRequireReceiver);
         }
     }
 }

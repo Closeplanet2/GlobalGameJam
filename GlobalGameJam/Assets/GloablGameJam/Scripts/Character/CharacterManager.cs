@@ -163,6 +163,11 @@ namespace GloablGameJam.Scripts.Character
                 _maskObject.SetActive(state == CharacterState.PlayerControlled);
             }
 
+            if(_rigidbody != null)
+            {
+                _rigidbody.isKinematic = state == CharacterState.NPCControlled;
+            }
+
             // Avoid leftover physics motion when switching to NPC control.
             if (npc && _rigidbody != null)
             {

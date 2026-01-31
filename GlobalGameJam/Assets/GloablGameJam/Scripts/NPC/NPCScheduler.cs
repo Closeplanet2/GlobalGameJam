@@ -15,7 +15,7 @@ namespace GloablGameJam.Scripts.NPC
         private List<NPCScheduleItem> _loopItems = new();
         private readonly Stack<SchedulerFrame> _interruptStack = new();
 
-        private float _tickTimer;
+        private float _loopTickTimer;
         private uint _clock;
         private uint _maxClock;
 
@@ -61,11 +61,19 @@ namespace GloablGameJam.Scripts.NPC
 
         public void IHandleCharacterComponent()
         {
-            _tickTimer += Time.deltaTime;
-            if (_tickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
+            // 1) Smooth interrupts: tick every frame if active is interrupt.
+            if (_active is INPCInterruptItem)
+            {
+                TickActiveEveryFrame();
+                return;
+            }
 
-            _tickTimer = 0f;
-            Tick();
+            // 2) Otherwise use loop ticking for cheap scheduling.
+            _loopTickTimer += Time.deltaTime;
+            if (_loopTickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
+            _loopTickTimer = 0f;
+
+            TickLoopClock();
         }
 
         public void RebuildLoopCache()
@@ -103,7 +111,6 @@ namespace GloablGameJam.Scripts.NPC
             _active = interruptItem;
             _activeStart = _clock;
 
-            // Interrupt-only items run until IsComplete() returns true.
             _activeEnd = interruptItem is INPCInterruptItem
                 ? uint.MaxValue
                 : _clock + Math.Max(1u, interruptItem.DurationTicks);
@@ -112,7 +119,7 @@ namespace GloablGameJam.Scripts.NPC
 
             if (logTransitions)
             {
-                Debug.Log($"[NPCScheduler] {name} -> INTERRUPT START {_active.GetType().Name}", this as UnityEngine.Object);
+                Debug.Log($"[NPCScheduler] {name} -> INTERRUPT START {_active.GetType().Name}", this);
             }
         }
 
@@ -120,10 +127,7 @@ namespace GloablGameJam.Scripts.NPC
         {
             if (_interruptStack.Count == 0) return;
 
-            if (_active != null)
-            {
-                EndActive();
-            }
+            if (_active != null) EndActive();
 
             var frame = _interruptStack.Pop();
             _active = frame.active;
@@ -134,7 +138,7 @@ namespace GloablGameJam.Scripts.NPC
 
             if (logTransitions && _active != null)
             {
-                Debug.Log($"[NPCScheduler] {name} -> RESUME {_active.GetType().Name}", this as UnityEngine.Object);
+                Debug.Log($"[NPCScheduler] {name} -> RESUME {_active.GetType().Name}", this);
             }
         }
 
@@ -158,7 +162,25 @@ namespace GloablGameJam.Scripts.NPC
             return true;
         }
 
-        private void Tick()
+        private void TickActiveEveryFrame()
+        {
+            if (_active == null) return;
+
+            if (!_activeStarted)
+            {
+                _active.OnStart(_characterManager, _clock);
+                _activeStarted = true;
+            }
+
+            _active.OnTick(_characterManager, _clock);
+
+            if (_active.IsComplete(_characterManager, _clock))
+            {
+                EndActive();
+            }
+        }
+
+        private void TickLoopClock()
         {
             if (_interruptStack.Count == 0 && loopSchedule && _maxClock > 0 && _clock >= _maxClock)
             {
@@ -167,7 +189,7 @@ namespace GloablGameJam.Scripts.NPC
 
             if (_active != null)
             {
-                TickActive();
+                TickLoopActive();
                 return;
             }
 
@@ -175,7 +197,7 @@ namespace GloablGameJam.Scripts.NPC
             if (next != null)
             {
                 BeginActive(next);
-                TickActive();
+                TickLoopActive();
                 return;
             }
 
@@ -212,11 +234,11 @@ namespace GloablGameJam.Scripts.NPC
 
             if (logTransitions)
             {
-                Debug.Log($"[NPCScheduler] {name} -> LOOP START {_active.GetType().Name}", this as UnityEngine.Object);
+                Debug.Log($"[NPCScheduler] {name} -> LOOP START {_active.GetType().Name}", this);
             }
         }
 
-        private void TickActive()
+        private void TickLoopActive()
         {
             if (_active == null) return;
 
@@ -228,16 +250,7 @@ namespace GloablGameJam.Scripts.NPC
 
             _active.OnTick(_characterManager, _clock);
 
-            // Interrupt-only: relies on IsComplete.
-            if (_active.IsComplete(_characterManager, _clock))
-            {
-                EndActive();
-                _clock++;
-                return;
-            }
-
-            // Loop items: also time-bound by activeEnd.
-            if (_clock >= _activeEnd)
+            if (_active.IsComplete(_characterManager, _clock) || _clock >= _activeEnd)
             {
                 EndActive();
                 _clock++;
@@ -253,7 +266,7 @@ namespace GloablGameJam.Scripts.NPC
 
             if (logTransitions)
             {
-                Debug.Log($"[NPCScheduler] {name} -> END {_active.GetType().Name}", this as UnityEngine.Object);
+                Debug.Log($"[NPCScheduler] {name} -> END {_active.GetType().Name}", this);
             }
 
             _active.OnEnd(_characterManager, _clock);

@@ -4,10 +4,12 @@ using CustomLibrary.Events.PlayerInputManager;
 using CustomLibrary.Scripts.GameEventSystem;
 using GloablGameJam.Scripts.Camera;
 using GloablGameJam.Scripts.Character;
+using GloablGameJam.Scripts.Combat;
 using GloablGameJam.Scripts.NPC;
 using GloablGameJam.Scripts.PlayerInputManager;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace GloablGameJam.Scripts.Game
 {
@@ -15,9 +17,11 @@ namespace GloablGameJam.Scripts.Game
     {
         [Header("Player")]
         [SerializeField] private CharacterManager _startingPlayer;
+        [SerializeField] private Transform _respawnPoint;
 
         private CharacterManager _currentPlayer;
         private Collider[] _currentPlayerColliders = Array.Empty<Collider>();
+        private Health _currentPlayerHealth;
 
         public CharacterManager CurrentPlayer => _currentPlayer;
 
@@ -36,8 +40,15 @@ namespace GloablGameJam.Scripts.Game
         [Header("Swap Consequences")]
         [SerializeField, Min(0f)] private float _leftBehindStunSeconds = 2.0f;
 
+        [Header("Respawn")]
+        [SerializeField, Min(0f)] private float _respawnInvulnerableSeconds = 1.0f;
+
         [Header("Debug")]
         [SerializeField] private bool log = true;
+
+        [Header("Alert Behaviour")]
+        [SerializeField] private bool _allowImmediateChaseOnAlert = true;
+        [SerializeField, Min(0f)] private float _immediateChaseSightSeconds = 1.0f;
 
         protected override void Awake()
         {
@@ -50,17 +61,95 @@ namespace GloablGameJam.Scripts.Game
 
             SetCurrentPlayer(_startingPlayer != null ? _startingPlayer : _currentPlayer);
 
+            if (_respawnPoint == null && _startingPlayer != null)
+            {
+                // Fallback: spawn where starting player begins.
+                _respawnPoint = _startingPlayer.transform;
+            }
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
         private void SetCurrentPlayer(CharacterManager player)
         {
+            if (_currentPlayerHealth != null)
+            {
+                _currentPlayerHealth.Died -= OnCurrentPlayerDied;
+            }
+
             _currentPlayer = player;
 
             _currentPlayerColliders = player != null
                 ? player.GetComponentsInChildren<Collider>(includeInactive: true)
                 : Array.Empty<Collider>();
+
+            _currentPlayerHealth = player != null ? player.GetComponent<Health>() : null;
+            if (_currentPlayerHealth != null)
+            {
+                _currentPlayerHealth.Died += OnCurrentPlayerDied;
+            }
+        }
+
+        private bool _isReloading;
+
+        private void OnCurrentPlayerDied(Health hp)
+        {
+            if (_isReloading) return;
+            _isReloading = true;
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            var scene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(scene.buildIndex);
+        }
+
+        private void Respawn()
+        {
+            if (_startingPlayer == null) return;
+            if (_respawnPoint == null) return;
+
+            // Return control to the starting player for simplicity.
+            if (_currentPlayer != null && _currentPlayer != _startingPlayer)
+            {
+                _currentPlayer.ISetCharacterState(CharacterState.NPCControlled);
+            }
+
+            _startingPlayer.ISetCharacterState(CharacterState.PlayerControlled);
+            _startingPlayer.transform.position = _respawnPoint.position;
+            _startingPlayer.transform.rotation = _respawnPoint.rotation;
+
+            var hp = _startingPlayer.GetComponent<Health>();
+            if (hp != null)
+            {
+                hp.HealFull();
+                hp.GrantInvulnerability(_respawnInvulnerableSeconds);
+            }
+
+            ClearNpcAlertState();
+            SetCurrentPlayer(_startingPlayer);
+
+            _nextAllowedGlobalSwapTime = Time.time + _globalSwapCooldownSeconds;
+
+            if (log) Debug.Log("[Respawn] Player respawned + NPCs reset", this);
+        }
+
+        private void ClearNpcAlertState()
+        {
+            for (var i = 0; i < NPCScheduler.All.Count; i++)
+            {
+                var scheduler = NPCScheduler.All[i];
+                if (scheduler == null) continue;
+
+                var perception = scheduler.GetComponent<NPCPerception>();
+                // Just letting alert time expire is fine; but we can hard-clear by setting alert far in the past.
+                if (perception != null)
+                {
+                    // No direct clear method; simplest is re-create with zero duration:
+                    perception.ISetAlerted(); // refresh
+                }
+            }
         }
 
         [EventHandler(Channel = PlayerInputManagerStatic.PLAYER_INPUT_MANAGER_CHANNEL, IgnoreCancelled = false)]
@@ -91,27 +180,24 @@ namespace GloablGameJam.Scripts.Game
 
             var leftBehind = _currentPlayer;
 
-            // Swap
             SwapControl(leftBehind, target);
 
-            // Cooldowns
             _nextAllowedGlobalSwapTime = Time.time + _globalSwapCooldownSeconds;
             leftBehind.IMarkMaskSwappedNow();
             target.IMarkMaskSwappedNow();
 
-            // Stun last body
             leftBehind.IStun(_leftBehindStunSeconds);
 
-            // Alert all NPCs to investigate last body location
             AlertAllNpcs(leftBehind.transform.position);
 
             SetCurrentPlayer(target);
 
-            if (log) Debug.Log($"[MaskSwap] player now '{target.name}', left '{leftBehind.name}' stunned+POI", this);
+            if (log) Debug.Log($"[MaskSwap] now '{target.name}', left '{leftBehind.name}' (stunned+POI)", this);
         }
 
         private void AlertAllNpcs(Vector3 poi)
         {
+            var player = _currentPlayer; // after swap, current player already updated by SetCurrentPlayer
             for (var i = 0; i < NPCScheduler.All.Count; i++)
             {
                 var scheduler = NPCScheduler.All[i];
@@ -122,11 +208,23 @@ namespace GloablGameJam.Scripts.Game
                 if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
 
                 var perception = scheduler.GetComponent<NPCPerception>();
-                if (perception != null) perception.ISetAlerted();
+                if (perception != null)
+                {
+                    perception.ISetAlerted();
 
+                    // Option: if they can see you right now, go straight to chase.
+                    if (_allowImmediateChaseOnAlert && player != null && perception.ICanSeeNow(player))
+                    {
+                        scheduler.ITryInterruptChase(player, replaceCurrent: true);
+                        continue;
+                    }
+                }
+
+                // Default: investigate the last body spot.
                 scheduler.ITryInterruptInvestigate(poi, replaceCurrent: true);
             }
         }
+
 
         private CharacterManager FindTargetCharacter(Ray ray)
         {
