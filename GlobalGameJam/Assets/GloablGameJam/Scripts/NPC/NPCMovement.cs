@@ -1,88 +1,75 @@
-using GloablGameJam.Scripts.Animation;
 using GloablGameJam.Scripts.Character;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace GloablGameJam.Scripts.NPC
 {
     public class NPCMovement : MonoBehaviour, ICharacterComponent
     {
         private ICharacterManager _characterManager;
-        private Vector3 _target;
-        private bool _hasTarget;
+        private NavMeshAgent _agent;
 
         [Header("Movement")]
-        [SerializeField] private float moveSpeed = 2f;
-        [SerializeField] private float rotationSpeed = 8f;
-        [SerializeField] private float stopDistance = 0.1f;
+        [SerializeField] private float moveSpeed = 3.5f;
+        [SerializeField] private float angularSpeed = 720f;
+        [SerializeField] private float stoppingDistance = 0.2f;
 
         public void ISetCharacterManager(ICharacterManager characterManager)
         {
             _characterManager = characterManager;
         }
 
-        public void ISetTarget(Vector3 worldPosition)
+        private void Awake()
         {
-            _target = worldPosition;
-            _hasTarget = true;
+            _agent = GetComponent<NavMeshAgent>();
+            ApplyAgentSettings();
         }
 
-        public void IStop()
+        private void OnValidate()
         {
-            _hasTarget = false;
-
-            var rb = _characterManager.ICharacterRigidbody();
-            var v = rb.linearVelocity;
-            rb.linearVelocity = new Vector3(0f, v.y, 0f);
-
-            _characterManager.IAnimatorController()
-                .IUpdateFloatValue(AnimatorKey.Horizontal, 0f);
-        }
-
-        public bool IHasReachedTarget()
-        {
-            if (!_hasTarget) return true;
-
-            var pos = transform.position;
-            pos.y = _target.y;
-            return Vector3.Distance(pos, _target) <= stopDistance;
+            if (_agent == null) _agent = GetComponent<NavMeshAgent>();
+            if (_agent != null) ApplyAgentSettings();
         }
 
         public void IHandleCharacterComponent()
         {
-            if (!_hasTarget) return;
+            
+        }
 
-            var rb = _characterManager.ICharacterRigidbody();
+        private void ApplyAgentSettings()
+        {
+            _agent.speed = moveSpeed;
+            _agent.angularSpeed = angularSpeed;
+            _agent.stoppingDistance = stoppingDistance;
+            _agent.updatePosition = true;
+            _agent.updateRotation = true;
+        }
 
-            var toTarget = _target - transform.position;
-            toTarget.y = 0f;
+        public void SetDestination(Vector3 worldPos)
+        {
+            if (!_agent.isOnNavMesh) return;
+            _agent.isStopped = false;
+            _agent.SetDestination(worldPos);
+        }
 
-            if (toTarget.sqrMagnitude <= stopDistance * stopDistance)
-            {
-                IStop();
-                return;
-            }
+        public void Stop()
+        {
+            if (!_agent.isOnNavMesh) return;
+            _agent.isStopped = true;
+            _agent.ResetPath();
+        }
 
-            var dir = toTarget.normalized;
+        public bool HasArrived()
+        {
+            if (!_agent.isOnNavMesh) return true;
+            if (_agent.pathPending) return false;
+            if (_agent.remainingDistance == Mathf.Infinity) return false;
+            return _agent.remainingDistance <= _agent.stoppingDistance;
+        }
 
-            // Move
-            var currentY = rb.linearVelocity.y;
-            rb.linearVelocity = new Vector3(
-                dir.x * moveSpeed,
-                currentY,
-                dir.z * moveSpeed
-            );
-
-            // Rotate
-            var targetRotation = Quaternion.LookRotation(dir, Vector3.up);
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime
-            );
-
-            // Animate (0 = idle, 1 = walk)
-            _characterManager.IAnimatorController()
-                .IUpdateFloatValue(AnimatorKey.Horizontal, 1f);
+        public Vector3 CurrentDestination()
+        {
+            return _agent.destination;
         }
     }
 }

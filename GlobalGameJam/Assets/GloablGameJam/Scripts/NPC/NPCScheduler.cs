@@ -1,41 +1,31 @@
 using System;
 using System.Collections.Generic;
-using AYellowpaper.SerializedCollections;
+using System.Linq;
 using GloablGameJam.Scripts.Character;
 using UnityEngine;
 
 namespace GloablGameJam.Scripts.NPC
 {
-    public class NPCScheduler : MonoBehaviour, ICharacterComponent
+    public class NPCScheduler : MonoBehaviour, INPCScheduler
     {
         private ICharacterManager _characterManager;
-
-        [Header("Schedule")]
-        [SerializeField] private List<NPCScheduleItem> scheduleItems = new();
-        [SerializeField] private bool loopSchedule = true;
-
-        [Header("Clock")]
-        [Tooltip("How many seconds per schedule tick. 1 = real seconds.")] 
-        [SerializeField] private float tickIntervalSeconds = 1f;
-        
+        private List<NPCScheduleItem> _scheduleItems = new();
+        private readonly Stack<SchedulerFrame> _interruptStack = new();
         private float _tickTimer;
         private uint _clock;
         private uint _maxClock;
-
         private NPCScheduleItem _active;
         private uint _activeStart;
         private uint _activeEnd;
-        private bool _activeStarted;        
+        private bool _activeStarted;
 
-        private readonly Stack<SchedulerFrame> _interruptStack = new();
+        [Header("Schedule Settings")]
+        [SerializeField] private bool loopSchedule = true;
 
-        private struct SchedulerFrame
+        private void Awake()
         {
-            public NPCScheduleItem active;
-            public uint activeStart;
-            public uint activeEnd;
-            public bool activeStarted;
-            public uint clock;
+            _scheduleItems = GetComponentsInChildren<NPCScheduleItem>().ToList();
+            IRebuildScheduleCache();
         }
 
         public void ISetCharacterManager(ICharacterManager characterManager)
@@ -43,45 +33,29 @@ namespace GloablGameJam.Scripts.NPC
             _characterManager = characterManager;
         }
 
-        private void Awake()
-        {
-            RebuildScheduleCache();
-        }
-
-        private void OnValidate()
-        {
-            if (tickIntervalSeconds < 0.02f) tickIntervalSeconds = 0.02f;
-        }
-
         public void IHandleCharacterComponent()
         {
-            if (_characterManager == null) return;
-
-            // Drive clock at tickIntervalSeconds (default 1 second).
             _tickTimer += Time.deltaTime;
-            if (_tickTimer < tickIntervalSeconds) return;
+            if(_tickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
             _tickTimer = 0f;
-
-            TickOnce();
+            TickMe();
         }
 
-        public void RebuildScheduleCache()
+        public void IRebuildScheduleCache()
         {
             _maxClock = 0;
-            scheduleItems.Sort((a, b) => a.ITriggerTime().CompareTo(b.ITriggerTime()));
-            for (int i = 0; i < scheduleItems.Count; i++)
+            for (int i = 0; i < _scheduleItems.Count; i++)
             {
-                var item = scheduleItems[i];
+                var item = _scheduleItems[i];
                 if (item == null) continue;
-                var end = item.ITriggerTime() + item.ITaskDuration();
+                var end = item.TriggerTime + item.DurationTicks;
                 if (end > _maxClock) _maxClock = end;
             }
         }
 
-        public void Interrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)
+        public void IInterrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)
         {
             if (interruptItem == null) return;
-
             _interruptStack.Push(new SchedulerFrame
             {
                 active = _active,
@@ -90,30 +64,17 @@ namespace GloablGameJam.Scripts.NPC
                 activeStarted = _activeStarted,
                 clock = _clock
             });
-
-            if (replaceCurrent && _active != null)
-            {
-                // End current task cleanly before replacing
-                SafeEnd(_active);
-            }
-
+            if (replaceCurrent && _active != null) EndActive(); 
             _active = interruptItem;
             _activeStart = _clock;
-            _activeEnd = _clock + Math.Max(1u, interruptItem.ITaskDuration());
+            _activeEnd = _clock + Math.Max(1u, interruptItem.DurationTicks);
             _activeStarted = false;
         }
 
-        public void ResumeFromInterrupt()
+        public void IResumeFromInterrupt()
         {
             if (_interruptStack.Count == 0) return;
-
-            if (_active != null)
-            {
-                SafeEnd(_active);
-                _active = null;
-                _activeStarted = false;
-            }
-
+            if (_active != null) EndActive();
             var frame = _interruptStack.Pop();
             _active = frame.active;
             _activeStart = frame.activeStart;
@@ -122,112 +83,91 @@ namespace GloablGameJam.Scripts.NPC
             _clock = frame.clock;
         }
 
-        private void EndActiveNow()
+        private void TickMe()
         {
-            if (_active == null) return;
-
-            SafeEnd(_active);
-            _active = null;
-            _activeStarted = false;
-
-            // If we were in an interrupt, resume the schedule stack immediately.
-            if (_interruptStack.Count > 0)
+            if (loopSchedule && _maxClock > 0 && _clock >= _maxClock)
             {
-                ResumeFromInterrupt();
-            }
-        }
-
-        private void TickOnce()
-        {
-            if (_interruptStack.Count == 0 && loopSchedule && _maxClock > 0 && _clock > _maxClock)
-            {
-                if (_active != null)
-                {
-                    SafeEnd(_active);
-                    _active = null;
-                    _activeStarted = false;
-                }
-
                 _clock = 0;
             }
 
-            if (_active != null)
+            if(_active != null)
             {
-                if (!_activeStarted)
-                {
-                    SafeStart(_active);
-                    _activeStarted = true;
-                }
-
-                SafeTick(_active);
-                if (_active.IIsComplete(_characterManager, _clock))
-                {
-                    EndActiveNow();
-                    _clock += 1;
-                    return;
-                }
-
-                // Duration completion
-                if (_clock >= _activeEnd)
-                {
-                    EndActiveNow();
-                    _clock += 1;
-                    return;
-                }
-
-                _clock += 1;
+                HandleExistingActive();
                 return;
             }
 
-            // No active task: select one for this time
-            var next = FindItemStartingAt(_clock);
-            if (next != null)
+            var next = FindItemStartingAt();
+            if(next != null)
             {
-                _active = next;
-                _activeStart = _clock;
-                _activeEnd = _clock + next.ITaskDuration();
-                _activeStarted = false;
-
-                // Run start immediately on same tick so it responds instantly
-                SafeStart(_active);
-                _activeStarted = true;
-                SafeTick(_active);
+                HandleNextActive(next);
+                return;
             }
 
-            _clock += 1;
-        }
+            _clock++;
+        } 
 
-        private NPCScheduleItem FindItemStartingAt(uint clock)
+        private NPCScheduleItem FindItemStartingAt()
         {
-            // scheduleItems are sorted by trigger time
-            for (int i = 0; i < scheduleItems.Count; i++)
+            NPCScheduleItem best = null;
+            var bestPriority = int.MinValue;
+            for (int i = 0; i < _scheduleItems.Count; i++)
             {
-                var item = scheduleItems[i];
+                var item = _scheduleItems[i];
                 if (item == null) continue;
+                if (item.TriggerTime != _clock) continue;
+                if (best == null || item.Priority > bestPriority)
+                {
+                    best = item;
+                    bestPriority = item.Priority;
+                }
+            }
+            return best;
+        }
 
-                if (item.ITriggerTime() == clock)
-                    return item;
+        private void HandleNextActive(NPCScheduleItem next)
+        {
+            _active = next;
+            _activeStart = _clock;
+            _activeEnd = _clock + Math.Max(1u, next.DurationTicks);
+            _activeStarted = false;
+            _active.OnStart(_characterManager, _clock);
+            _activeStarted = true;
+            _active.OnTick(_characterManager, _clock);
+        }
+
+        private void HandleExistingActive()
+        {
+            if (!_activeStarted)
+            {
+                _active.OnStart(_characterManager, _clock);
+                _activeStarted = true;
             }
 
-            return null;
+            _active.OnTick(_characterManager, _clock);
+
+            if(_active.IsComplete(_characterManager, _clock))
+            {
+                EndActive();
+                _clock++;
+                return;
+            }
+
+            if(_clock >= _activeEnd)
+            {
+                EndActive();
+                _clock++;
+                return;
+            }
+
+            _clock++;
         }
 
-        private void SafeStart(NPCScheduleItem item)
+        private void EndActive()
         {
-            try { item.IStartTask(_characterManager, _clock); }
-            catch (Exception ex) { Debug.LogException(ex, item); }
-        }
-
-        private void SafeTick(NPCScheduleItem item)
-        {
-            try { item.ITickTask(_characterManager, _clock); }
-            catch (Exception ex) { Debug.LogException(ex, item); }
-        }
-
-        private void SafeEnd(NPCScheduleItem item)
-        {
-            try { item.IEndTask(_characterManager, _clock); }
-            catch (Exception ex) { Debug.LogException(ex, item); }
+            if(_active == null) return;
+            _active.OnEnd(_characterManager, _clock);
+            _active = null;
+            _activeStarted = false;
         }
     }
 }

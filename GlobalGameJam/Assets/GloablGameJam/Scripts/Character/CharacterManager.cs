@@ -7,21 +7,24 @@ using GloablGameJam.Scripts.Camera;
 using GloablGameJam.Scripts.NPC;
 using GloablGameJam.Scripts.Player;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace GloablGameJam.Scripts.Character
 {
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
+    [RequireComponent(typeof(NavMeshAgent))]
     public class CharacterManager : MonoBehaviour, ICharacterManager
     {
         private Dictionary<Type, ICharacterComponent> _characterComponents = new();
         private Rigidbody _characterRigidBody;
+        private NavMeshAgent _navMeshAgent;
         private float _npcTimer;
 
         [Header("Character Settings")]
         [SerializeField] private CharacterID characterID;
         
-         [SerializeField] private CharacterState characterState;
+        [SerializeField] private CharacterState characterState;
 
         [Header("Animator Controller")]
         [SerializeField] private AnimatorController animatorController;
@@ -41,12 +44,15 @@ namespace GloablGameJam.Scripts.Character
                 }
             }
             _characterRigidBody = GetComponent<Rigidbody>();
+            _navMeshAgent = GetComponent<NavMeshAgent>();
         }
 
         private void Update()
         {
-            if (characterState != CharacterState.NPCControlled) return;
-            if (ITryGetCharacterComponent<NPCScheduler>(out var s)) s.IHandleCharacterComponent();
+            if (characterState == CharacterState.NPCControlled && ITryGetCharacterComponent<NPCScheduler>(out var nPCScheduler))
+            {
+                nPCScheduler.IHandleCharacterComponent();
+            }
         }
 
         private void FixedUpdate()
@@ -85,6 +91,7 @@ namespace GloablGameJam.Scripts.Character
         public void ISetCharacterState(CharacterState characterState)
         {
             this.characterState = characterState;
+            _navMeshAgent.enabled = characterState == CharacterState.NPCControlled;
             GameEventSystem.Instance.Fire(new CharacterStateUpdated(characterID, characterState), CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
         }
     }

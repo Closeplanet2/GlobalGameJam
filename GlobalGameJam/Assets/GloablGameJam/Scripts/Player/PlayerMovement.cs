@@ -5,7 +5,6 @@ using GloablGameJam.Scripts.Animation;
 using GloablGameJam.Scripts.Character;
 using GloablGameJam.Scripts.PlayerInputManager;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 namespace GloablGameJam.Scripts.Player
 {
@@ -17,7 +16,7 @@ namespace GloablGameJam.Scripts.Player
         private Vector2 _playerMovementInput;
         private bool _isPlayerCrouch;
         private bool _isPlayerSprinting;
-        private bool _isGrounded;
+        private bool _isGrounded = true;
         private float _inAirTimer;
 
         [Header("Movement Enables")]
