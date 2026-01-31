@@ -14,85 +14,91 @@ namespace GloablGameJam.Scripts.Character
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
     [RequireComponent(typeof(NavMeshAgent))]
-    public class CharacterManager : MonoBehaviour, ICharacterManager
+    public sealed class CharacterManager : MonoBehaviour, ICharacterManager
     {
-        private Dictionary<Type, ICharacterComponent> _characterComponents = new();
-        private Rigidbody _characterRigidBody;
-        private NavMeshAgent _navMeshAgent;
-        private float _npcTimer;
+        private readonly Dictionary<Type, ICharacterComponent> _characterComponents = new();
+        private Rigidbody _rigidbody;
+        private NavMeshAgent _agent;
 
         [Header("Character Settings")]
-        [SerializeField] private CharacterID characterID;
-        
-        [SerializeField] private CharacterState characterState;
+        [SerializeField] private CharacterID _characterID;
+        [SerializeField] private CharacterState _characterState;
+        [SerializeField] private GameObject maskObject;
 
         [Header("Animator Controller")]
-        [SerializeField] private AnimatorController animatorController;
+        [SerializeField] private AnimatorController _animatorController;
 
         [Header("Camera")]
-        [SerializeField] private CameraManager cameraManager;
+        [SerializeField] private CameraManager _cameraManager;
 
         private void Awake()
+        {
+            CacheCharacterComponents();
+            _rigidbody = GetComponent<Rigidbody>();
+            _agent = GetComponent<NavMeshAgent>();
+            ApplyState(_characterState, fireEvent: false);
+        }
+
+        private void CacheCharacterComponents()
         {
             var monoBehaviours = GetComponents<MonoBehaviour>();
             for (var i = 0; i < monoBehaviours.Length; i++)
             {
-                if (monoBehaviours[i] is ICharacterComponent characterComponent)
-                {
-                    characterComponent.ISetCharacterManager(this);
-                    _characterComponents[characterComponent.GetType()] = characterComponent;
-                }
+                if (monoBehaviours[i] is not ICharacterComponent c) continue;
+                c.ISetCharacterManager(this);
+                _characterComponents[c.GetType()] = c;
             }
-            _characterRigidBody = GetComponent<Rigidbody>();
-            _navMeshAgent = GetComponent<NavMeshAgent>();
         }
 
         private void Update()
         {
-            if (characterState == CharacterState.NPCControlled && ITryGetCharacterComponent<NPCScheduler>(out var nPCScheduler))
-            {
-                nPCScheduler.IHandleCharacterComponent();
-            }
+            if (_characterState != CharacterState.NPCControlled) return;
+            if (ITryGetCharacterComponent<NPCScheduler>(out var scheduler)) scheduler.IHandleCharacterComponent();
         }
 
         private void FixedUpdate()
         {
-            if(characterState == CharacterState.PlayerControlled)
-            {
-                if(ITryGetCharacterComponent<PlayerMovement>(out var playerMovement)) playerMovement.IHandleCharacterComponent();
-            }
+            if (_characterState != CharacterState.PlayerControlled) return;
+            if (ITryGetCharacterComponent<PlayerMovement>(out var movement)) movement.IHandleCharacterComponent();
         }
 
         private void LateUpdate()
         {
-            if(characterState == CharacterState.PlayerControlled)
-            {
-                if(ITryGetCharacterComponent<PlayerCamera>(out var playerCamera)) playerCamera.IHandleCharacterComponent();
-            }
+            if (_characterState != CharacterState.PlayerControlled) return;
+            if (ITryGetCharacterComponent<PlayerCamera>(out var camera)) camera.IHandleCharacterComponent();
         }
 
-        public IAnimatorController IAnimatorController() => animatorController;
+        public IAnimatorController IAnimatorController() => _animatorController;
 
-        public ICameraManager ICameraManager() => cameraManager;
+        public ICameraManager ICameraManager() => _cameraManager;
 
-        public Rigidbody ICharacterRigidbody() => _characterRigidBody;
+        public Rigidbody ICharacterRigidbody() => _rigidbody;
 
         public bool ITryGetCharacterComponent<T>(out T value) where T : class, ICharacterComponent
         {
-            if (_characterComponents.TryGetValue(typeof(T), out var component))
+            if (_characterComponents.TryGetValue(typeof(T), out var component) && component is T typed)
             {
-                value = component as T;
-                return value != null;
+                value = typed;
+                return true;
             }
             value = null;
             return false;
         }
 
-        public void ISetCharacterState(CharacterState characterState)
+        public void ISetCharacterState(CharacterState state)
         {
-            this.characterState = characterState;
-            _navMeshAgent.enabled = characterState == CharacterState.NPCControlled;
-            GameEventSystem.Instance.Fire(new CharacterStateUpdated(characterID, characterState), CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
+            ApplyState(state, fireEvent: true);
+        }
+
+        private void ApplyState(CharacterState state, bool fireEvent)
+        {
+            _characterState = state;
+            if (_agent != null)  _agent.enabled = state == CharacterState.NPCControlled;
+            if(maskObject != null) maskObject.SetActive(state == CharacterState.PlayerControlled);
+            if (fireEvent && GameEventSystem.Instance != null)
+            {
+                GameEventSystem.Instance.Fire(new CharacterStateUpdated(_characterID, _characterState), CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
+            }
         }
     }
 }

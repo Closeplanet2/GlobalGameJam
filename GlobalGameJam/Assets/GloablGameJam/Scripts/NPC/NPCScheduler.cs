@@ -6,25 +6,26 @@ using UnityEngine;
 
 namespace GloablGameJam.Scripts.NPC
 {
-    public class NPCScheduler : MonoBehaviour, INPCScheduler
+    public sealed class NPCScheduler : MonoBehaviour, INPCScheduler
     {
         private ICharacterManager _characterManager;
-        private List<NPCScheduleItem> _scheduleItems = new();
         private readonly Stack<SchedulerFrame> _interruptStack = new();
+
+        private List<NPCScheduleItem> _scheduleItems = new();
         private float _tickTimer;
         private uint _clock;
         private uint _maxClock;
+
         private NPCScheduleItem _active;
-        private uint _activeStart;
         private uint _activeEnd;
         private bool _activeStarted;
 
         [Header("Schedule Settings")]
-        [SerializeField] private bool loopSchedule = true;
+        [SerializeField] private bool _loopSchedule = true;
 
         private void Awake()
         {
-            _scheduleItems = GetComponentsInChildren<NPCScheduleItem>().ToList();
+            _scheduleItems = GetComponentsInChildren<NPCScheduleItem>(includeInactive: true).ToList();
             IRebuildScheduleCache();
         }
 
@@ -35,38 +36,40 @@ namespace GloablGameJam.Scripts.NPC
 
         public void IHandleCharacterComponent()
         {
+            if (_characterManager == null) return;
             _tickTimer += Time.deltaTime;
-            if(_tickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
+            if (_tickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
             _tickTimer = 0f;
-            TickMe();
+            Tick();
         }
 
         public void IRebuildScheduleCache()
         {
+            _scheduleItems = _scheduleItems.Where(x => x != null).ToList();
             _maxClock = 0;
-            for (int i = 0; i < _scheduleItems.Count; i++)
+            for (var i = 0; i < _scheduleItems.Count; i++)
             {
                 var item = _scheduleItems[i];
-                if (item == null) continue;
-                var end = item.TriggerTime + item.DurationTicks;
+                var end = item.TriggerTime + Math.Max(1u, item.DurationTicks);
                 if (end > _maxClock) _maxClock = end;
             }
         }
 
         public void IInterrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)
         {
+            if (_characterManager == null) return;
             if (interruptItem == null) return;
+
             _interruptStack.Push(new SchedulerFrame
             {
                 active = _active,
-                activeStart = _activeStart,
                 activeEnd = _activeEnd,
                 activeStarted = _activeStarted,
                 clock = _clock
             });
-            if (replaceCurrent && _active != null) EndActive(); 
+
+            if (replaceCurrent && _active != null)  EndActive();
             _active = interruptItem;
-            _activeStart = _clock;
             _activeEnd = _clock + Math.Max(1u, interruptItem.DurationTicks);
             _activeStarted = false;
         }
@@ -77,44 +80,42 @@ namespace GloablGameJam.Scripts.NPC
             if (_active != null) EndActive();
             var frame = _interruptStack.Pop();
             _active = frame.active;
-            _activeStart = frame.activeStart;
             _activeEnd = frame.activeEnd;
             _activeStarted = frame.activeStarted;
             _clock = frame.clock;
         }
 
-        private void TickMe()
+        private void Tick()
         {
-            if (_interruptStack.Count == 0 && loopSchedule && _maxClock > 0 && _clock >= _maxClock)
-            {
-                _clock = 0;
-            }
+            if (_interruptStack.Count == 0 && _loopSchedule && _maxClock > 0 && _clock >= _maxClock) _clock = 0;
 
-            if(_active != null)
+            if (_active != null)
             {
-                HandleExistingActive();
+                TickActive();
                 return;
             }
 
-            var next = FindItemStartingAt();
-            if(next != null)
+            var next = FindItemStartingAt(_clock);
+            if (next != null)
             {
-                HandleNextActive(next);
+                StartActive(next);
+                TickActive(); 
                 return;
             }
 
             _clock++;
-        } 
+        }
 
-        private NPCScheduleItem FindItemStartingAt()
+        private NPCScheduleItem FindItemStartingAt(uint clock)
         {
             NPCScheduleItem best = null;
             var bestPriority = int.MinValue;
-            for (int i = 0; i < _scheduleItems.Count; i++)
+            for (var i = 0; i < _scheduleItems.Count; i++)
             {
                 var item = _scheduleItems[i];
                 if (item == null) continue;
-                if (item.TriggerTime != _clock) continue;
+                if (item.TriggerTime != clock) continue;
+
                 if (best == null || item.Priority > bestPriority)
                 {
                     best = item;
@@ -124,51 +125,48 @@ namespace GloablGameJam.Scripts.NPC
             return best;
         }
 
-        private void HandleNextActive(NPCScheduleItem next)
+        private void StartActive(NPCScheduleItem item)
         {
-            _active = next;
-            _activeStart = _clock;
-            _activeEnd = _clock + Math.Max(1u, next.DurationTicks);
+            _active = item;
+            _activeEnd = _clock + Math.Max(1u, item.DurationTicks);
             _activeStarted = false;
-            _active.OnStart(_characterManager, _clock);
-            _activeStarted = true;
-            _active.OnTick(_characterManager, _clock);
         }
 
-        private void HandleExistingActive()
+        private void TickActive()
         {
+            if (_active == null) return;
             if (!_activeStarted)
             {
                 _active.OnStart(_characterManager, _clock);
                 _activeStarted = true;
             }
-
             _active.OnTick(_characterManager, _clock);
-
-            if(_active.IsComplete(_characterManager, _clock))
+            var complete = _active.IsComplete(_characterManager, _clock);
+            var timedOut = _clock >= _activeEnd;
+            if (complete || timedOut)
             {
                 EndActive();
                 _clock++;
                 return;
             }
-
-            if(_clock >= _activeEnd)
-            {
-                EndActive();
-                _clock++;
-                return;
-            }
-
             _clock++;
         }
 
         private void EndActive()
         {
-            if(_active == null) return;
+            if (_active == null) return;
             _active.OnEnd(_characterManager, _clock);
             _active = null;
             _activeStarted = false;
             if (_interruptStack.Count > 0) IResumeFromInterrupt();
+        }
+
+        private struct SchedulerFrame
+        {
+            public NPCScheduleItem active;
+            public uint activeEnd;
+            public bool activeStarted;
+            public uint clock;
         }
     }
 }

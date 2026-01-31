@@ -1698,10 +1698,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41bcd943c8b3f0a439f9c5ae2050dd12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Character.CharacterManager
-  characterID: 0
-  characterState: 1
-  animatorController: {fileID: 1203806080}
-  cameraManager: {fileID: 2005382403}
+  _characterID: 0
+  _characterState: 1
+  _animatorController: {fileID: 1203806080}
+  _cameraManager: {fileID: 2005382403}
 --- !u!54 &798754991
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1781,7 +1781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  loopSchedule: 1
+  _loopSchedule: 1
 --- !u!114 &798754995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1897,11 +1897,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a18406033ae95a4abd3368f154b18e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.CameraMaskDrop
-  holdSeconds: 2
+  holdSeconds: 1
   zoomOutFov: 75
   zoomSpeed: 2
   maxShakeAmplitude: 0.12
   maxShakeFrequency: 14
+  maxPulseOffset: 0.08
+  minPulseFrequency: 1.2
+  maxPulseFrequency: 5.5
+  minTimeScale: 0.85
+  enableTimeDilation: 1
+  _target: {fileID: 0}
+  _cam: {fileID: 0}
+  _defaultFov: 0
+  _holdTimer: 0
+  _isHolding: 0
+  _completed: 0
+  _camTransform: {fileID: 0}
+  _baseLocalPos: {x: 0, y: 0, z: 0}
+  _shakeSeed: 0
+  _timeModified: 0
 --- !u!4 &887025973
 Transform:
   m_ObjectHideFlags: 0
@@ -2342,10 +2357,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41bcd943c8b3f0a439f9c5ae2050dd12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Character.CharacterManager
-  characterID: 0
-  characterState: 0
-  animatorController: {fileID: 7237859889433011302}
-  cameraManager: {fileID: 2005382403}
+  _characterID: 0
+  _characterState: 0
+  _animatorController: {fileID: 7237859889433011302}
+  _cameraManager: {fileID: 2005382403}
 --- !u!136 &1067891275
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2393,7 +2408,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  loopSchedule: 1
+  _loopSchedule: 1
 --- !u!114 &1067891278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3027,8 +3042,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.GlobalGameJam
   allowDuplicateInstance: 0
   allowPersistence: 0
-  characterManager: {fileID: 1067891274}
-  cameraMaskDrop: {fileID: 887025972}
 --- !u!114 &1362661777
 MonoBehaviour:
   m_ObjectHideFlags: 0

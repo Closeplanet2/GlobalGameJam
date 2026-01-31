@@ -4,6 +4,7 @@ namespace GloablGameJam.Scripts.Character
 {
     public enum CharacterID
     {
-        TestCharacter
+        TestPlayer,
+        TestNPC
     }
 }
