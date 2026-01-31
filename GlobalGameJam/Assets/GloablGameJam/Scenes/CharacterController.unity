@@ -1553,6 +1553,58 @@ SkinnedMeshRenderer:
     m_Center: {x: 0, y: 85.1767, z: -4.8376417}
     m_Extent: {x: 102.120445, y: 97.93497, z: 26.829224}
   m_DirtyAABB: 0
+--- !u!1 &374629168
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 374629169}
+  - component: {fileID: 374629170}
+  m_Layer: 7
+  m_Name: NPCInvestigatePointInterrupt (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &374629169
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374629168}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -7.7, y: 0, z: 6.67}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1067891273}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &374629170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374629168}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 963bfd55d51c9434894c0e7ca5fe45e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCInvestigatePointInterrupt
+  includeInLoop: 0
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  arriveDistance: 1.2
+  lookSeconds: 1.5
+  repathSeconds: 0.25
+  log: 1
 --- !u!1 &394664999
 GameObject:
   m_ObjectHideFlags: 0
@@ -1824,7 +1876,7 @@ GameObject:
   - component: {fileID: 458632072}
   - component: {fileID: 458632071}
   - component: {fileID: 458632070}
-  - component: {fileID: 458632069}
+  - component: {fileID: 458632079}
   m_Layer: 7
   m_Name: TestPlayer (2)
   m_TagString: Untagged
@@ -1832,28 +1884,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &458632069
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 458632068}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
 --- !u!114 &458632070
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1881,7 +1911,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  _loopSchedule: 1
+  loopSchedule: 1
+  logTransitions: 1
 --- !u!114 &458632072
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2032,9 +2063,31 @@ Transform:
   - {fileID: 1300851348}
   - {fileID: 1462158739}
   - {fileID: 732411614}
+  - {fileID: 1118746389}
   - {fileID: 304348795}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &458632079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 458632068}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e14872eec0a961f439cb1b008d6a6c77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPerception
+  alertSeconds: 10
+  sightRange: 12
+  fovDegrees: 110
+  losMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  proximityRange: 2.75
+  proximitySecondsToChase: 0.75
+  log: 1
 --- !u!1 &459181541
 GameObject:
   m_ObjectHideFlags: 0
@@ -2237,13 +2290,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 963bfd55d51c9434894c0e7ca5fe45e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCInvestigatePointInterrupt
+  includeInLoop: 0
   triggerTime: 0
   durationTicks: 1
   priority: 0
-  includeInLoop: 0
-  _arriveDistance: 1
-  _lookSeconds: 1
-  _repathSeconds: 0.25
+  arriveDistance: 1.2
+  lookSeconds: 1.5
+  repathSeconds: 0.25
+  log: 1
 --- !u!1 &608718197
 GameObject:
   m_ObjectHideFlags: 0
@@ -2774,13 +2828,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 963bfd55d51c9434894c0e7ca5fe45e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCInvestigatePointInterrupt
+  includeInLoop: 0
   triggerTime: 0
   durationTicks: 1
   priority: 0
-  includeInLoop: 0
-  _arriveDistance: 1
-  _lookSeconds: 1
-  _repathSeconds: 0.25
+  arriveDistance: 1.2
+  lookSeconds: 1.5
+  repathSeconds: 0.25
+  log: 1
 --- !u!1 &753310587
 GameObject:
   m_ObjectHideFlags: 0
@@ -2978,10 +3033,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94a73079751ee394085b8a6b70789225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPatrolScheduleItem
+  includeInLoop: 1
   triggerTime: 0
   durationTicks: 1
   priority: 0
-  includeInLoop: 1
   points:
   - {fileID: 147717786}
   - {fileID: 1984983409}
@@ -3318,6 +3373,65 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!1 &894642331
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 894642332}
+  - component: {fileID: 894642333}
+  m_Layer: 7
+  m_Name: NPCChaseTargetInterrupt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &894642332
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894642331}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -9.86, y: 0, z: -5.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1067891273}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &894642333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 894642331}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9feedad8555a22e4997525cdb20f02e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCChaseTargetInterrupt
+  includeInLoop: 0
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  repathSeconds: 0.15
+  sightRange: 12
+  fovDegrees: 110
+  losMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  loseSightGraceSeconds: 2
+  attackRange: 1.8
+  attackCooldownSeconds: 1
+  attackDamage: 10
+  log: 1
 --- !u!1 &914621661
 GameObject:
   m_ObjectHideFlags: 0
@@ -3763,6 +3877,8 @@ Transform:
   - {fileID: 3835329229228036772}
   - {fileID: 210407201}
   - {fileID: 767654311}
+  - {fileID: 374629169}
+  - {fileID: 894642332}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1067891274
@@ -3831,7 +3947,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  _loopSchedule: 1
+  loopSchedule: 1
+  logTransitions: 1
 --- !u!114 &1067891278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4143,6 +4260,65 @@ Transform:
   - {fileID: 1250894081}
   m_Father: {fileID: 1249610950}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1118746388
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1118746389}
+  - component: {fileID: 1118746390}
+  m_Layer: 7
+  m_Name: NPCChaseTargetInterrupt (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1118746389
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1118746388}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.1599998, y: 0, z: -12.47}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 458632078}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1118746390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1118746388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9feedad8555a22e4997525cdb20f02e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCChaseTargetInterrupt
+  includeInLoop: 0
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  repathSeconds: 0.15
+  sightRange: 12
+  fovDegrees: 110
+  losMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  loseSightGraceSeconds: 2
+  attackRange: 1.8
+  attackCooldownSeconds: 1
+  attackDamage: 10
+  log: 1
 --- !u!1 &1127985241
 GameObject:
   m_ObjectHideFlags: 0
@@ -4536,6 +4712,65 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2a9d5ab5b0b3ab74baaf8fa984e996aa, type: 3}
+--- !u!1 &1245339647
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1245339648}
+  - component: {fileID: 1245339649}
+  m_Layer: 7
+  m_Name: NPCChaseTargetInterrupt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1245339648
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1245339647}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1249610950}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1245339649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1245339647}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9feedad8555a22e4997525cdb20f02e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCChaseTargetInterrupt
+  includeInLoop: 0
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  repathSeconds: 0.15
+  sightRange: 12
+  fovDegrees: 110
+  losMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  loseSightGraceSeconds: 2
+  attackRange: 1.8
+  attackCooldownSeconds: 1
+  attackDamage: 10
+  log: 1
 --- !u!1 &1247904154
 GameObject:
   m_ObjectHideFlags: 0
@@ -4620,7 +4855,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  _loopSchedule: 1
+  loopSchedule: 1
+  logTransitions: 1
 --- !u!114 &1249610944
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4771,31 +5007,31 @@ Transform:
   - {fileID: 869393084}
   - {fileID: 1392399079}
   - {fileID: 607604695}
+  - {fileID: 1245339648}
   - {fileID: 753310588}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &1249610951
-MeshCollider:
+--- !u!114 &1249610951
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1249610941}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e14872eec0a961f439cb1b008d6a6c77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPerception
+  alertSeconds: 10
+  sightRange: 12
+  fovDegrees: 110
+  losMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  proximityRange: 2.75
+  proximitySecondsToChase: 0.75
+  log: 1
 --- !u!1 &1250894080
 GameObject:
   m_ObjectHideFlags: 0
@@ -4998,7 +5234,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   _triggerInteraction: 1
+  _globalSwapCooldownSeconds: 0.75
   _leftBehindStunSeconds: 2
+  log: 1
 --- !u!114 &1362661777
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5209,10 +5447,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94a73079751ee394085b8a6b70789225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPatrolScheduleItem
+  includeInLoop: 1
   triggerTime: 0
   durationTicks: 1
   priority: 0
-  includeInLoop: 1
   points:
   - {fileID: 147717786}
   - {fileID: 1984983409}
@@ -5263,10 +5501,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 94a73079751ee394085b8a6b70789225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPatrolScheduleItem
+  includeInLoop: 1
   triggerTime: 0
   durationTicks: 1
   priority: 0
-  includeInLoop: 1
   points:
   - {fileID: 147717786}
   - {fileID: 1984983409}

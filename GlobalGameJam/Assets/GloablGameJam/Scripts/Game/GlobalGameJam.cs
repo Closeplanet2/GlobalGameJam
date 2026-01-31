@@ -29,8 +29,15 @@ namespace GloablGameJam.Scripts.Game
         [SerializeField] private LayerMask _characterLayerMask = ~0;
         [SerializeField] private QueryTriggerInteraction _triggerInteraction = QueryTriggerInteraction.Ignore;
 
+        [Header("Swap Cooldowns")]
+        [SerializeField, Min(0f)] private float _globalSwapCooldownSeconds = 0.75f;
+        private float _nextAllowedGlobalSwapTime;
+
         [Header("Swap Consequences")]
         [SerializeField, Min(0f)] private float _leftBehindStunSeconds = 2.0f;
+
+        [Header("Debug")]
+        [SerializeField] private bool log = true;
 
         protected override void Awake()
         {
@@ -69,6 +76,8 @@ namespace GloablGameJam.Scripts.Game
         {
             if (_cameraManager == null) return;
             if (_currentPlayer == null) return;
+
+            if (Time.time < _nextAllowedGlobalSwapTime) return;
             if (!_currentPlayer.ICanBeMaskSwapped()) return;
 
             var cam = _cameraManager.IManagedCamera();
@@ -77,39 +86,45 @@ namespace GloablGameJam.Scripts.Game
             var ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             var target = FindTargetCharacter(ray);
             if (target == null) return;
+
             if (!target.ICanBeMaskSwapped()) return;
 
             var leftBehind = _currentPlayer;
 
+            // Swap
             SwapControl(leftBehind, target);
+
+            // Cooldowns
+            _nextAllowedGlobalSwapTime = Time.time + _globalSwapCooldownSeconds;
+            leftBehind.IMarkMaskSwappedNow();
+            target.IMarkMaskSwappedNow();
 
             // Stun last body
             leftBehind.IStun(_leftBehindStunSeconds);
 
-            // Alert all NPCs to investigate that body
+            // Alert all NPCs to investigate last body location
             AlertAllNpcs(leftBehind.transform.position);
 
-            leftBehind.IMarkMaskSwappedNow();
-            target.IMarkMaskSwappedNow();
             SetCurrentPlayer(target);
+
+            if (log) Debug.Log($"[MaskSwap] player now '{target.name}', left '{leftBehind.name}' stunned+POI", this);
         }
 
-        private void AlertAllNpcs(Vector3 pointOfInterest)
+        private void AlertAllNpcs(Vector3 poi)
         {
-            for (var i = 0; i < GloablGameJam.Scripts.NPC.NPCScheduler.All.Count; i++)
+            for (var i = 0; i < NPCScheduler.All.Count; i++)
             {
-                var scheduler = GloablGameJam.Scripts.NPC.NPCScheduler.All[i];
+                var scheduler = NPCScheduler.All[i];
                 if (scheduler == null) continue;
 
                 var cm = scheduler.GetComponentInParent<CharacterManager>();
                 if (cm == null) continue;
-
                 if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
 
-                var perception = scheduler.GetComponent<GloablGameJam.Scripts.NPC.NPCPerception>();
+                var perception = scheduler.GetComponent<NPCPerception>();
                 if (perception != null) perception.ISetAlerted();
 
-                scheduler.ITryInterruptInvestigate(pointOfInterest, replaceCurrent: true);
+                scheduler.ITryInterruptInvestigate(poi, replaceCurrent: true);
             }
         }
 
@@ -124,13 +139,13 @@ namespace GloablGameJam.Scripts.Game
             {
                 var col = hits[i].collider;
                 if (col == null) continue;
+
                 if (IsSelfCollider(col)) continue;
 
                 var cm = col.GetComponentInParent<CharacterManager>();
                 if (cm == null) continue;
                 if (cm == _currentPlayer) continue;
 
-                // Only swap into NPC-controlled targets.
                 if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
 
                 return cm;
@@ -157,8 +172,6 @@ namespace GloablGameJam.Scripts.Game
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-        }       
-
-        
+        }
     }
 }

@@ -7,14 +7,17 @@ namespace GloablGameJam.Scripts.NPC
     public sealed class NPCInvestigatePointInterrupt : NPCScheduleItem, INPCInterruptItem
     {
         [Header("Investigate")]
-        [SerializeField, Min(0f)] private float _arriveDistance = 1.0f;
-        [SerializeField, Min(0f)] private float _lookSeconds = 1.0f;
-        [SerializeField, Min(0f)] private float _repathSeconds = 0.25f;
+        [SerializeField, Min(0f)] private float arriveDistance = 1.2f;
+        [SerializeField, Min(0f)] private float lookSeconds = 1.5f;
+        [SerializeField, Min(0f)] private float repathSeconds = 0.25f;
+
+        [Header("Debug")]
+        [SerializeField] private bool log = true;
 
         private Vector3 _point;
+        private bool _hasPoint;
         private float _lookTimer;
         private float _nextRepathAt;
-        private bool _hasPoint;
 
         public void SetInvestigatePoint(Vector3 point)
         {
@@ -27,29 +30,29 @@ namespace GloablGameJam.Scripts.NPC
         public override void OnStart(ICharacterManager characterManager, uint clock)
         {
             if (!_hasPoint) return;
-
             if (characterManager is not MonoBehaviour mb) return;
             if (!mb.TryGetComponent<NavMeshAgent>(out var agent)) return;
 
             agent.isStopped = false;
             agent.SetDestination(_point);
+
+            if (log) Debug.Log($"[Investigate] {mb.name} investigating {_point}", mb);
         }
 
         public override void OnTick(ICharacterManager characterManager, uint clock)
         {
             if (!_hasPoint) return;
-
             if (characterManager is not MonoBehaviour mb) return;
             if (!mb.TryGetComponent<NavMeshAgent>(out var agent)) return;
 
             if (Time.time >= _nextRepathAt)
             {
-                _nextRepathAt = Time.time + _repathSeconds;
+                _nextRepathAt = Time.time + repathSeconds;
                 agent.isStopped = false;
                 agent.SetDestination(_point);
             }
 
-            if (!agent.pathPending && agent.remainingDistance <= Mathf.Max(_arriveDistance, agent.stoppingDistance))
+            if (!agent.pathPending && agent.remainingDistance <= Mathf.Max(arriveDistance, agent.stoppingDistance))
             {
                 _lookTimer += Time.deltaTime;
             }
@@ -57,12 +60,16 @@ namespace GloablGameJam.Scripts.NPC
 
         public override bool IsComplete(ICharacterManager characterManager, uint clock)
         {
-            if (!_hasPoint) return true;
-            return _lookTimer >= _lookSeconds;
+            return !_hasPoint || _lookTimer >= lookSeconds;
         }
 
         public override void OnEnd(ICharacterManager characterManager, uint clock)
         {
+            if (characterManager is MonoBehaviour mb && log)
+            {
+                Debug.Log($"[Investigate] {mb.name} done", mb);
+            }
+
             _hasPoint = false;
             _lookTimer = 0f;
             _nextRepathAt = 0f;

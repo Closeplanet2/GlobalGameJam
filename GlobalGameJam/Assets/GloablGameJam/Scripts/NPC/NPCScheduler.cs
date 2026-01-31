@@ -6,29 +6,37 @@ using UnityEngine;
 
 namespace GloablGameJam.Scripts.NPC
 {
-    public sealed class NPCScheduler : MonoBehaviour, INPCScheduler
+    public sealed class NPCScheduler : MonoBehaviour, ICharacterComponent
     {
         public static readonly List<NPCScheduler> All = new();
 
         private ICharacterManager _characterManager;
+
+        private List<NPCScheduleItem> _loopItems = new();
         private readonly Stack<SchedulerFrame> _interruptStack = new();
 
-        private List<NPCScheduleItem> _scheduleItems = new();
         private float _tickTimer;
         private uint _clock;
         private uint _maxClock;
 
         private NPCScheduleItem _active;
+        private uint _activeStart;
         private uint _activeEnd;
         private bool _activeStarted;
 
-        [Header("Schedule Settings")]
-        [SerializeField] private bool _loopSchedule = true;
+        [Header("Schedule")]
+        [SerializeField] private bool loopSchedule = true;
 
-        private void Awake()
+        [Header("Debug")]
+        [SerializeField] private bool logTransitions = true;
+
+        private struct SchedulerFrame
         {
-            _scheduleItems = GetComponentsInChildren<NPCScheduleItem>(includeInactive: true).ToList();
-            IRebuildScheduleCache();
+            public NPCScheduleItem active;
+            public uint activeStart;
+            public uint activeEnd;
+            public bool activeStarted;
+            public uint clock;
         }
 
         private void OnEnable()
@@ -41,6 +49,11 @@ namespace GloablGameJam.Scripts.NPC
             All.Remove(this);
         }
 
+        private void Awake()
+        {
+            RebuildLoopCache();
+        }
+
         public void ISetCharacterManager(ICharacterManager characterManager)
         {
             _characterManager = characterManager;
@@ -48,26 +61,84 @@ namespace GloablGameJam.Scripts.NPC
 
         public void IHandleCharacterComponent()
         {
-            if (_characterManager == null) return;
             _tickTimer += Time.deltaTime;
             if (_tickTimer < NPCSchedulerStatic.TICK_INTERVALS_SECOND) return;
+
             _tickTimer = 0f;
             Tick();
         }
 
-        public void IRebuildScheduleCache()
+        public void RebuildLoopCache()
         {
-            _scheduleItems = _scheduleItems.Where(x => x != null && x.IncludeInLoop).ToList();
+            var all = GetComponentsInChildren<NPCScheduleItem>(includeInactive: true).ToList();
+            _loopItems = all.Where(x => x != null && x.IncludeInLoop).ToList();
+
             _maxClock = 0;
-            for (var i = 0; i < _scheduleItems.Count; i++)
+            for (var i = 0; i < _loopItems.Count; i++)
             {
-                var item = _scheduleItems[i];
-                var end = item.TriggerTime + Mathf.Max(1u, item.DurationTicks);
-                if (end > _maxClock) _maxClock = (uint) end;
+                var item = _loopItems[i];
+                var end = item.TriggerTime + Math.Max(1u, item.DurationTicks);
+                if (end > _maxClock) _maxClock = end;
             }
         }
 
-        public bool ITryInterruptInvestigate(Vector3 point, bool replaceCurrent = false)
+        public void IInterrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)
+        {
+            if (interruptItem == null) return;
+
+            _interruptStack.Push(new SchedulerFrame
+            {
+                active = _active,
+                activeStart = _activeStart,
+                activeEnd = _activeEnd,
+                activeStarted = _activeStarted,
+                clock = _clock
+            });
+
+            if (replaceCurrent && _active != null)
+            {
+                EndActive();
+            }
+
+            _active = interruptItem;
+            _activeStart = _clock;
+
+            // Interrupt-only items run until IsComplete() returns true.
+            _activeEnd = interruptItem is INPCInterruptItem
+                ? uint.MaxValue
+                : _clock + Math.Max(1u, interruptItem.DurationTicks);
+
+            _activeStarted = false;
+
+            if (logTransitions)
+            {
+                Debug.Log($"[NPCScheduler] {name} -> INTERRUPT START {_active.GetType().Name}", this as UnityEngine.Object);
+            }
+        }
+
+        public void IResumeFromInterrupt()
+        {
+            if (_interruptStack.Count == 0) return;
+
+            if (_active != null)
+            {
+                EndActive();
+            }
+
+            var frame = _interruptStack.Pop();
+            _active = frame.active;
+            _activeStart = frame.activeStart;
+            _activeEnd = frame.activeEnd;
+            _activeStarted = frame.activeStarted;
+            _clock = frame.clock;
+
+            if (logTransitions && _active != null)
+            {
+                Debug.Log($"[NPCScheduler] {name} -> RESUME {_active.GetType().Name}", this as UnityEngine.Object);
+            }
+        }
+
+        public bool ITryInterruptInvestigate(Vector3 point, bool replaceCurrent = true)
         {
             var interrupt = GetComponentInChildren<NPCInvestigatePointInterrupt>(includeInactive: true);
             if (interrupt == null) return false;
@@ -87,39 +158,12 @@ namespace GloablGameJam.Scripts.NPC
             return true;
         }
 
-        public void IInterrupt(NPCScheduleItem interruptItem, bool replaceCurrent = false)
-        {
-            if (_characterManager == null) return;
-            if (interruptItem == null) return;
-
-            _interruptStack.Push(new SchedulerFrame
-            {
-                active = _active,
-                activeEnd = _activeEnd,
-                activeStarted = _activeStarted,
-                clock = _clock
-            });
-
-            if (replaceCurrent && _active != null)  EndActive();
-            _active = interruptItem;
-            _activeEnd = _clock + Math.Max(1u, interruptItem.DurationTicks);
-            _activeStarted = false;
-        }
-
-        public void IResumeFromInterrupt()
-        {
-            if (_interruptStack.Count == 0) return;
-            if (_active != null) EndActive();
-            var frame = _interruptStack.Pop();
-            _active = frame.active;
-            _activeEnd = frame.activeEnd;
-            _activeStarted = frame.activeStarted;
-            _clock = frame.clock;
-        }
-
         private void Tick()
         {
-            if (_interruptStack.Count == 0 && _loopSchedule && _maxClock > 0 && _clock >= _maxClock) _clock = 0;
+            if (_interruptStack.Count == 0 && loopSchedule && _maxClock > 0 && _clock >= _maxClock)
+            {
+                _clock = 0;
+            }
 
             if (_active != null)
             {
@@ -127,26 +171,27 @@ namespace GloablGameJam.Scripts.NPC
                 return;
             }
 
-            var next = FindItemStartingAt(_clock);
+            var next = FindNextLoopItemStartingNow();
             if (next != null)
             {
-                StartActive(next);
-                TickActive(); 
+                BeginActive(next);
+                TickActive();
                 return;
             }
 
             _clock++;
         }
 
-        private NPCScheduleItem FindItemStartingAt(uint clock)
+        private NPCScheduleItem FindNextLoopItemStartingNow()
         {
             NPCScheduleItem best = null;
             var bestPriority = int.MinValue;
-            for (var i = 0; i < _scheduleItems.Count; i++)
+
+            for (var i = 0; i < _loopItems.Count; i++)
             {
-                var item = _scheduleItems[i];
+                var item = _loopItems[i];
                 if (item == null) continue;
-                if (item.TriggerTime != clock) continue;
+                if (item.TriggerTime != _clock) continue;
 
                 if (best == null || item.Priority > bestPriority)
                 {
@@ -154,51 +199,71 @@ namespace GloablGameJam.Scripts.NPC
                     bestPriority = item.Priority;
                 }
             }
+
             return best;
         }
 
-        private void StartActive(NPCScheduleItem item)
+        private void BeginActive(NPCScheduleItem item)
         {
             _active = item;
+            _activeStart = _clock;
             _activeEnd = _clock + Math.Max(1u, item.DurationTicks);
             _activeStarted = false;
+
+            if (logTransitions)
+            {
+                Debug.Log($"[NPCScheduler] {name} -> LOOP START {_active.GetType().Name}", this as UnityEngine.Object);
+            }
         }
 
         private void TickActive()
         {
             if (_active == null) return;
+
             if (!_activeStarted)
             {
                 _active.OnStart(_characterManager, _clock);
                 _activeStarted = true;
             }
+
             _active.OnTick(_characterManager, _clock);
-            var complete = _active.IsComplete(_characterManager, _clock);
-            var timedOut = _clock >= _activeEnd;
-            if (complete || timedOut)
+
+            // Interrupt-only: relies on IsComplete.
+            if (_active.IsComplete(_characterManager, _clock))
             {
                 EndActive();
                 _clock++;
                 return;
             }
+
+            // Loop items: also time-bound by activeEnd.
+            if (_clock >= _activeEnd)
+            {
+                EndActive();
+                _clock++;
+                return;
+            }
+
             _clock++;
         }
 
         private void EndActive()
         {
             if (_active == null) return;
+
+            if (logTransitions)
+            {
+                Debug.Log($"[NPCScheduler] {name} -> END {_active.GetType().Name}", this as UnityEngine.Object);
+            }
+
             _active.OnEnd(_characterManager, _clock);
             _active = null;
             _activeStarted = false;
-            if (_interruptStack.Count > 0) IResumeFromInterrupt();
-        }
 
-        private struct SchedulerFrame
-        {
-            public NPCScheduleItem active;
-            public uint activeEnd;
-            public bool activeStarted;
-            public uint clock;
+            if (_interruptStack.Count > 0)
+            {
+                IResumeFromInterrupt();
+            }
         }
     }
 }
