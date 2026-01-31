@@ -17,13 +17,17 @@ namespace GloablGameJam.Scripts.Character
     public sealed class CharacterManager : MonoBehaviour, ICharacterManager
     {
         private readonly Dictionary<Type, ICharacterComponent> _characterComponents = new();
+
         private Rigidbody _rigidbody;
         private NavMeshAgent _agent;
+
+        private float _nextAllowedMaskSwapTime;
 
         [Header("Character Settings")]
         [SerializeField] private CharacterID _characterID;
         [SerializeField] private CharacterState _characterState;
-        [SerializeField] private GameObject maskObject;
+
+        [SerializeField] private GameObject _maskObject;
 
         [Header("Animator Controller")]
         [SerializeField] private AnimatorController _animatorController;
@@ -31,11 +35,16 @@ namespace GloablGameJam.Scripts.Character
         [Header("Camera")]
         [SerializeField] private CameraManager _cameraManager;
 
+        [Header("Mask Swap")]
+        [SerializeField, Min(0f)] private float _maskSwapCooldownSeconds = 1.0f;
+
         private void Awake()
         {
             CacheCharacterComponents();
+
             _rigidbody = GetComponent<Rigidbody>();
             _agent = GetComponent<NavMeshAgent>();
+
             ApplyState(_characterState, fireEvent: false);
         }
 
@@ -45,6 +54,7 @@ namespace GloablGameJam.Scripts.Character
             for (var i = 0; i < monoBehaviours.Length; i++)
             {
                 if (monoBehaviours[i] is not ICharacterComponent c) continue;
+
                 c.ISetCharacterManager(this);
                 _characterComponents[c.GetType()] = c;
             }
@@ -81,8 +91,19 @@ namespace GloablGameJam.Scripts.Character
                 value = typed;
                 return true;
             }
+
             value = null;
             return false;
+        }
+
+        public bool ICanBeMaskSwapped()
+        {
+            return Time.time >= _nextAllowedMaskSwapTime;
+        }
+
+        public void IMarkMaskSwappedNow()
+        {
+            _nextAllowedMaskSwapTime = Time.time + _maskSwapCooldownSeconds;
         }
 
         public void ISetCharacterState(CharacterState state)
@@ -93,11 +114,31 @@ namespace GloablGameJam.Scripts.Character
         private void ApplyState(CharacterState state, bool fireEvent)
         {
             _characterState = state;
-            if (_agent != null)  _agent.enabled = state == CharacterState.NPCControlled;
-            if(maskObject != null) maskObject.SetActive(state == CharacterState.PlayerControlled);
+
+            var npc = state == CharacterState.NPCControlled;
+
+            if (_agent != null)
+            {
+                _agent.enabled = npc;
+            }
+
+            if (_maskObject != null)
+            {
+                _maskObject.SetActive(state == CharacterState.PlayerControlled);
+            }
+
+            // Optional: avoid leftover physics motion when switching away from player control
+            if (npc && _rigidbody != null)
+            {
+                _rigidbody.linearVelocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
+
             if (fireEvent && GameEventSystem.Instance != null)
             {
-                GameEventSystem.Instance.Fire(new CharacterStateUpdated(_characterID, _characterState), CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
+                GameEventSystem.Instance.Fire(
+                    new CharacterStateUpdated(_characterID, _characterState),
+                    CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
             }
         }
     }

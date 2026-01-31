@@ -371,7 +371,7 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
                 {
                     ""name"": """",
                     ""id"": ""1c6e5903-cf2c-45cd-a3de-6eca2d925e3d"",
-                    ""path"": ""<Keyboard>/z"",
+                    ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
