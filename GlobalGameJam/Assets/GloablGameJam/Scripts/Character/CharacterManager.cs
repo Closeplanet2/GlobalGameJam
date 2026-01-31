@@ -4,6 +4,7 @@ using CustomLibrary.Scripts.GameEventSystem;
 using GloablGameJam.Events;
 using GloablGameJam.Scripts.Animation;
 using GloablGameJam.Scripts.Camera;
+using GloablGameJam.Scripts.NPC;
 using GloablGameJam.Scripts.Player;
 using UnityEngine;
 
@@ -15,6 +16,7 @@ namespace GloablGameJam.Scripts.Character
     {
         private Dictionary<Type, ICharacterComponent> _characterComponents = new();
         private Rigidbody _characterRigidBody;
+        private float _npcTimer;
 
         [Header("Character Settings")]
         [SerializeField] private CharacterID characterID;
@@ -39,6 +41,12 @@ namespace GloablGameJam.Scripts.Character
                 }
             }
             _characterRigidBody = GetComponent<Rigidbody>();
+        }
+
+        private void Update()
+        {
+            if (characterState != CharacterState.NPCControlled) return;
+            if (ITryGetCharacterComponent<NPCScheduler>(out var s)) s.IHandleCharacterComponent();
         }
 
         private void FixedUpdate()

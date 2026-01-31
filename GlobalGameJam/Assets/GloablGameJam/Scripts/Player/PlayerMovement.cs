@@ -19,13 +19,11 @@ namespace GloablGameJam.Scripts.Player
         private bool _isPlayerSprinting;
         private bool _isGrounded;
         private float _inAirTimer;
-        private bool _isJumping;
 
         [Header("Movement Enables")]
         [SerializeField] private bool crouchEnabled = true;
         [SerializeField] private bool sprintingEnabled = true;
         [SerializeField] private bool fallingAndLandingEnabled = true;
-        [SerializeField] private bool jumpingEnabled = true;
 
         [Header("Movement Speed")]
         [SerializeField] private float crouchSpeed;
@@ -48,10 +46,6 @@ namespace GloablGameJam.Scripts.Player
         [SerializeField] private float groundRaycastOffset = 0.2f;
         [SerializeField] private LayerMask groundLayer;
 
-        [Header("Jumping")]
-        [SerializeField] private float jumpGravityIntensity = -15f;
-        [SerializeField] private float jumpHeight = 3;
-
 
         [EventHandler(Channel = PlayerInputManagerStatic.PLAYER_INPUT_MANAGER_CHANNEL, IgnoreCancelled = false)]
         public void OnPlayerInputEvent(PlayerInputEvent<GGJ_PlayerInputKeys> playerInputEvent)
@@ -64,7 +58,6 @@ namespace GloablGameJam.Scripts.Player
                 if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.CharacterMovement) _playerMovementInput = playerInputEvent.CallbackContext.ReadValue<Vector2>();
                 if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.CharacterSprint) _isPlayerSprinting = moveAmount > 0.5f && sprintingEnabled;
                 if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.CharacterCrouch) _isPlayerCrouch = crouchEnabled;
-                if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.CharacterJump) _isJumping = jumpingEnabled;
             }
 
             if(phase == UnityEngine.InputSystem.InputActionPhase.Canceled)
@@ -118,7 +111,6 @@ namespace GloablGameJam.Scripts.Player
 
         private void HandlePlayerMovement()
         {
-            if(_isJumping) return;
             _playerMoveDirection = _characterManager.ICameraManager().IManagedCameraTransform().forward * _playerMovementInput.y;
             _playerMoveDirection += _characterManager.ICameraManager().IManagedCameraTransform().right * _playerMovementInput.x;
             _playerMoveDirection.y = 0f;          
@@ -135,7 +127,6 @@ namespace GloablGameJam.Scripts.Player
 
         private void HandlePlayerRotation()
         {
-            if(_isJumping) return;
             var cameraTransform = _characterManager.ICameraManager().IManagedCameraTransform();
             _playerRotationDirection = (cameraTransform.forward * _playerMovementInput.y) + (cameraTransform.right * _playerMovementInput.x);
             _playerRotationDirection.y = 0f;
