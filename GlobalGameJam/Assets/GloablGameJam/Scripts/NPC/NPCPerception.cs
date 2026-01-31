@@ -49,7 +49,7 @@ namespace GloablGameJam.Scripts.NPC
             var gm = GlobalGameJam.Instance;
             if (gm == null) return;
 
-            var player = gm.CurrentPlayer;
+            var player = gm.GetCurrentPlayer();
             if (player == null) return;
 
             var dist = Vector3.Distance(transform.position, player.transform.position);

@@ -25,20 +25,26 @@ namespace GloablGameJam.Scripts.Character
         private float _stunUntilTime;
 
         [Header("Character Settings")]
-        [SerializeField] private CharacterID _characterID;
-        [SerializeField] private CharacterState _characterState;
-        [SerializeField, Min(0f)] private float _stunSecondsDefault = 2.0f;
+        [SerializeField] private CharacterID characterID;
+        [SerializeField] private CharacterState characterState;
+        [SerializeField, Min(0f)] private float stunSecondsDefault = 2.0f;
 
-        [SerializeField] private GameObject _maskObject;
+        [Header("Mask Visual")]
+        [SerializeField] private GameObject maskObject;
 
         [Header("Animator Controller")]
-        [SerializeField] private AnimatorController _animatorController;
+        [SerializeField] private AnimatorController animatorController;
 
         [Header("Camera")]
-        [SerializeField] private CameraManager _cameraManager;
+        [SerializeField] private CameraManager cameraManager;
 
         [Header("Mask Swap")]
-        [SerializeField, Min(0f)] private float _maskSwapCooldownSeconds = 1.0f;
+        [SerializeField, Min(0f)] private float maskSwapCooldownSeconds = 1.0f;
+
+        [Header("Key Ownership")]
+        [Tooltip("If enabled, possessing this character unlocks a unique key id.")]
+        [SerializeField] private bool grantsKeyOnPossess;
+        [SerializeField] private string keyId = "";
 
         private void Awake()
         {
@@ -47,7 +53,7 @@ namespace GloablGameJam.Scripts.Character
             _rigidbody = GetComponent<Rigidbody>();
             _agent = GetComponent<NavMeshAgent>();
 
-            ApplyState(_characterState, fireEvent: false);
+            ApplyState(characterState, fireEvent: false);
         }
 
         private void CacheCharacterComponents()
@@ -56,7 +62,6 @@ namespace GloablGameJam.Scripts.Character
             for (var i = 0; i < monoBehaviours.Length; i++)
             {
                 if (monoBehaviours[i] is not ICharacterComponent c) continue;
-
                 c.ISetCharacterManager(this);
                 _characterComponents[c.GetType()] = c;
             }
@@ -64,14 +69,14 @@ namespace GloablGameJam.Scripts.Character
 
         private void Update()
         {
-            if (_characterState != CharacterState.NPCControlled) return;
+            if (characterState != CharacterState.NPCControlled) return;
 
             if (ITryGetCharacterComponent<NPCScheduler>(out var scheduler))
             {
                 scheduler.IHandleCharacterComponent();
             }
 
-            if (ITryGetCharacterComponent<GloablGameJam.Scripts.NPC.NPCPerception>(out var perception))
+            if (ITryGetCharacterComponent<NPCPerception>(out var perception))
             {
                 perception.IHandleCharacterComponent();
             }
@@ -79,24 +84,29 @@ namespace GloablGameJam.Scripts.Character
 
         private void FixedUpdate()
         {
-            if (_characterState != CharacterState.PlayerControlled) return;
+            if (characterState != CharacterState.PlayerControlled) return;
             if (IIsStunned()) return;
-            if (ITryGetCharacterComponent<PlayerMovement>(out var movement)) movement.IHandleCharacterComponent();
+
+            if (ITryGetCharacterComponent<PlayerMovement>(out var movement))
+            {
+                movement.IHandleCharacterComponent();
+            }
         }
 
         private void LateUpdate()
         {
-            if (_characterState != CharacterState.PlayerControlled) return;
+            if (characterState != CharacterState.PlayerControlled) return;
             if (IIsStunned()) return;
-            if (ITryGetCharacterComponent<PlayerCamera>(out var camera)) camera.IHandleCharacterComponent();
+
+            if (ITryGetCharacterComponent<PlayerCamera>(out var camera))
+            {
+                camera.IHandleCharacterComponent();
+            }
         }
 
-        public CharacterState IGetCharacterState() => _characterState;
-
-        public IAnimatorController IAnimatorController() => _animatorController;
-
-        public ICameraManager ICameraManager() => _cameraManager;
-
+        public CharacterState IGetCharacterState() => characterState;
+        public IAnimatorController IAnimatorController() => animatorController;
+        public ICameraManager ICameraManager() => cameraManager;
         public Rigidbody ICharacterRigidbody() => _rigidbody;
 
         public bool ITryGetCharacterComponent<T>(out T value) where T : class, ICharacterComponent
@@ -111,10 +121,7 @@ namespace GloablGameJam.Scripts.Character
             return false;
         }
 
-        public bool IIsStunned()
-        {
-            return Time.time < _stunUntilTime;
-        }
+        public bool IIsStunned() => Time.time < _stunUntilTime;
 
         public void IStun(float seconds)
         {
@@ -127,19 +134,19 @@ namespace GloablGameJam.Scripts.Character
             }
         }
 
-        public void IStunDefault()
-        {
-            IStun(_stunSecondsDefault);
-        }
+        public void IStunDefault() => IStun(stunSecondsDefault);
 
-        public bool ICanBeMaskSwapped()
-        {
-            return Time.time >= _nextAllowedMaskSwapTime;
-        }
+        public bool ICanBeMaskSwapped() => Time.time >= _nextAllowedMaskSwapTime;
 
         public void IMarkMaskSwappedNow()
         {
-            _nextAllowedMaskSwapTime = Time.time + _maskSwapCooldownSeconds;
+            _nextAllowedMaskSwapTime = Time.time + maskSwapCooldownSeconds;
+        }
+
+        public bool IGrantsKeyOnPossess(out string ownedKeyId)
+        {
+            ownedKeyId = keyId;
+            return grantsKeyOnPossess && !string.IsNullOrWhiteSpace(keyId);
         }
 
         public void ISetCharacterState(CharacterState state)
@@ -149,26 +156,18 @@ namespace GloablGameJam.Scripts.Character
 
         private void ApplyState(CharacterState state, bool fireEvent)
         {
-            _characterState = state;
+            characterState = state;
 
             var npc = state == CharacterState.NPCControlled;
 
-            if (_agent != null)
+            if (_agent != null) _agent.enabled = npc;
+            if (_rigidbody != null) _rigidbody.isKinematic = npc;
+
+            if (maskObject != null)
             {
-                _agent.enabled = npc;
+                maskObject.SetActive(state == CharacterState.PlayerControlled);
             }
 
-            if (_maskObject != null)
-            {
-                _maskObject.SetActive(state == CharacterState.PlayerControlled);
-            }
-
-            if(_rigidbody != null)
-            {
-                _rigidbody.isKinematic = state == CharacterState.NPCControlled;
-            }
-
-            // Avoid leftover physics motion when switching to NPC control.
             if (npc && _rigidbody != null)
             {
                 _rigidbody.linearVelocity = Vector3.zero;
@@ -178,7 +177,7 @@ namespace GloablGameJam.Scripts.Character
             if (fireEvent && GameEventSystem.Instance != null)
             {
                 GameEventSystem.Instance.Fire(
-                    new CharacterStateUpdated(_characterID, _characterState),
+                    new CharacterStateUpdated(characterID, characterState),
                     CharacterManagerStatic.CHARACTER_MANAGER_CHANNEL);
             }
         }

@@ -4,6 +4,7 @@ using GloablGameJam.Scripts.DreamfireMusicManager;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using GloablGameJam.Scripts.Game;
 
 
 [DisallowMultipleComponent]
@@ -116,8 +117,10 @@ public sealed class MainMenu : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private void HandleClick()
     {
-        GGJ_DreamfireMusicManager.Instance.PlayGlobal(CGJ_DreamfireMusicKeys.GameMusic);
-        SceneManagement.Instance.LoadLevel(sceneToLoad.ToString());
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.StartNewRun();
+        }  
     }
 
     private void EaseToScale(float targetScale)

@@ -16,60 +16,60 @@ namespace GloablGameJam.Scripts.Game
     public sealed class GlobalGameJam : GameEventMonoBehaviorInstance<GlobalGameJam>
     {
         [Header("Player")]
-        [SerializeField] private CharacterManager _startingPlayer;
-        [SerializeField] private Transform _respawnPoint;
+        [SerializeField] private CharacterManager startingPlayer;
+        [SerializeField] private Transform respawnPoint;
 
         private CharacterManager _currentPlayer;
         private Collider[] _currentPlayerColliders = Array.Empty<Collider>();
         private Health _currentPlayerHealth;
 
-        public CharacterManager CurrentPlayer => _currentPlayer;
-
         [Header("References")]
-        [SerializeField] private CameraManager _cameraManager;
+        [SerializeField] private CameraManager cameraManager;
 
         [Header("Mask Swap")]
-        [SerializeField, Min(0f)] private float _swapRange = 6f;
-        [SerializeField] private LayerMask _characterLayerMask = ~0;
-        [SerializeField] private QueryTriggerInteraction _triggerInteraction = QueryTriggerInteraction.Ignore;
+        [SerializeField, Min(0f)] private float swapRange = 6f;
+        [SerializeField] private LayerMask characterLayerMask = ~0;
+        [SerializeField] private QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
 
         [Header("Swap Cooldowns")]
-        [SerializeField, Min(0f)] private float _globalSwapCooldownSeconds = 0.75f;
+        [SerializeField, Min(0f)] private float globalSwapCooldownSeconds = 0.75f;
         private float _nextAllowedGlobalSwapTime;
 
         [Header("Swap Consequences")]
-        [SerializeField, Min(0f)] private float _leftBehindStunSeconds = 2.0f;
-
-        [Header("Respawn")]
-        [SerializeField, Min(0f)] private float _respawnInvulnerableSeconds = 1.0f;
+        [SerializeField, Min(0f)] private float leftBehindStunSeconds = 2.0f;
 
         [Header("Debug")]
         [SerializeField] private bool log = true;
 
         [Header("Alert Behaviour")]
-        [SerializeField] private bool _allowImmediateChaseOnAlert = true;
-        [SerializeField, Min(0f)] private float _immediateChaseSightSeconds = 1.0f;
+        [SerializeField] private bool allowImmediateChaseOnAlert = true;
+
+        private bool _handlingDeath;
 
         protected override void Awake()
         {
             base.Awake();
 
-            if (_startingPlayer != null)
+            if (startingPlayer != null)
             {
-                _startingPlayer.ISetCharacterState(CharacterState.PlayerControlled);
+                startingPlayer.ISetCharacterState(CharacterState.PlayerControlled);
             }
 
-            SetCurrentPlayer(_startingPlayer != null ? _startingPlayer : _currentPlayer);
-
-            if (_respawnPoint == null && _startingPlayer != null)
+            if (respawnPoint == null && startingPlayer != null)
             {
-                // Fallback: spawn where starting player begins.
-                _respawnPoint = _startingPlayer.transform;
+                respawnPoint = startingPlayer.transform;
             }
+
+            SetCurrentPlayer(startingPlayer != null ? startingPlayer : _currentPlayer);
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
+
+        public CharacterManager GetCurrentPlayer()
+{
+    return _currentPlayer;
+}
 
         private void SetCurrentPlayer(CharacterManager player)
         {
@@ -89,67 +89,38 @@ namespace GloablGameJam.Scripts.Game
             {
                 _currentPlayerHealth.Died += OnCurrentPlayerDied;
             }
-        }
 
-        private bool _isReloading;
+            // Ensure current controlled body respawns to the level's respawn point.
+            if (_currentPlayer != null && respawnPoint != null)
+            {
+                var respawner = _currentPlayer.GetComponent<PlayerRespawnController>();
+                if (respawner != null) respawner.SetRespawnPoint(respawnPoint);
+            }
+        }
 
         private void OnCurrentPlayerDied(Health hp)
         {
-            if (_isReloading) return;
-            _isReloading = true;
+            if (_handlingDeath) return;
+            _handlingDeath = true;
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
-            var scene = SceneManager.GetActiveScene();
-            SceneManager.LoadScene(scene.buildIndex);
-        }
+            var session = GameSessionManager.Instance;
+            var respawner = _currentPlayer != null ? _currentPlayer.GetComponent<PlayerRespawnController>() : null;
 
-        private void Respawn()
-        {
-            if (_startingPlayer == null) return;
-            if (_respawnPoint == null) return;
-
-            // Return control to the starting player for simplicity.
-            if (_currentPlayer != null && _currentPlayer != _startingPlayer)
+            if (session != null && respawner != null)
             {
-                _currentPlayer.ISetCharacterState(CharacterState.NPCControlled);
+                session.NotifyPlayerDied(respawner);
+            }
+            else
+            {
+                // Fail-safe if misconfigured:
+                var scene = SceneManager.GetActiveScene();
+                SceneManager.LoadScene(scene.buildIndex);
             }
 
-            _startingPlayer.ISetCharacterState(CharacterState.PlayerControlled);
-            _startingPlayer.transform.position = _respawnPoint.position;
-            _startingPlayer.transform.rotation = _respawnPoint.rotation;
-
-            var hp = _startingPlayer.GetComponent<Health>();
-            if (hp != null)
-            {
-                hp.HealFull();
-                hp.GrantInvulnerability(_respawnInvulnerableSeconds);
-            }
-
-            ClearNpcAlertState();
-            SetCurrentPlayer(_startingPlayer);
-
-            _nextAllowedGlobalSwapTime = Time.time + _globalSwapCooldownSeconds;
-
-            if (log) Debug.Log("[Respawn] Player respawned + NPCs reset", this);
-        }
-
-        private void ClearNpcAlertState()
-        {
-            for (var i = 0; i < NPCScheduler.All.Count; i++)
-            {
-                var scheduler = NPCScheduler.All[i];
-                if (scheduler == null) continue;
-
-                var perception = scheduler.GetComponent<NPCPerception>();
-                // Just letting alert time expire is fine; but we can hard-clear by setting alert far in the past.
-                if (perception != null)
-                {
-                    // No direct clear method; simplest is re-create with zero duration:
-                    perception.ISetAlerted(); // refresh
-                }
-            }
+            _handlingDeath = false;
         }
 
         [EventHandler(Channel = PlayerInputManagerStatic.PLAYER_INPUT_MANAGER_CHANNEL, IgnoreCancelled = false)]
@@ -163,13 +134,13 @@ namespace GloablGameJam.Scripts.Game
 
         private void TrySwapMaskByRaycast()
         {
-            if (_cameraManager == null) return;
+            if (cameraManager == null) return;
             if (_currentPlayer == null) return;
 
             if (Time.time < _nextAllowedGlobalSwapTime) return;
             if (!_currentPlayer.ICanBeMaskSwapped()) return;
 
-            var cam = _cameraManager.IManagedCamera();
+            var cam = cameraManager.IManagedCamera();
             if (cam == null) return;
 
             var ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
@@ -180,24 +151,40 @@ namespace GloablGameJam.Scripts.Game
 
             var leftBehind = _currentPlayer;
 
-            SwapControl(leftBehind, target);
+            // Swap control
+            leftBehind.ISetCharacterState(CharacterState.NPCControlled);
+            target.ISetCharacterState(CharacterState.PlayerControlled);
 
-            _nextAllowedGlobalSwapTime = Time.time + _globalSwapCooldownSeconds;
+            _nextAllowedGlobalSwapTime = Time.time + globalSwapCooldownSeconds;
             leftBehind.IMarkMaskSwappedNow();
             target.IMarkMaskSwappedNow();
 
-            leftBehind.IStun(_leftBehindStunSeconds);
+            leftBehind.IStun(leftBehindStunSeconds);
 
             AlertAllNpcs(leftBehind.transform.position);
 
             SetCurrentPlayer(target);
 
-            if (log) Debug.Log($"[MaskSwap] now '{target.name}', left '{leftBehind.name}' (stunned+POI)", this);
+            // Unlock key if this body grants one
+            var session = GameSessionManager.Instance;
+            if (session != null && target.IGrantsKeyOnPossess(out var keyId))
+            {
+                if (session.TryUnlockKey(keyId) && log)
+                {
+                    Debug.Log($"[Key] Unlocked '{keyId}' by possessing '{target.name}'", this);
+                }
+            }
+
+            if (log)
+            {
+                Debug.Log($"[MaskSwap] now '{target.name}', left '{leftBehind.name}'", this);
+            }
         }
 
         private void AlertAllNpcs(Vector3 poi)
         {
-            var player = _currentPlayer; // after swap, current player already updated by SetCurrentPlayer
+            var player = _currentPlayer;
+
             for (var i = 0; i < NPCScheduler.All.Count; i++)
             {
                 var scheduler = NPCScheduler.All[i];
@@ -212,23 +199,20 @@ namespace GloablGameJam.Scripts.Game
                 {
                     perception.ISetAlerted();
 
-                    // Option: if they can see you right now, go straight to chase.
-                    if (_allowImmediateChaseOnAlert && player != null && perception.ICanSeeNow(player))
+                    if (allowImmediateChaseOnAlert && player != null && perception.ICanSeeNow(player))
                     {
                         scheduler.ITryInterruptChase(player, replaceCurrent: true);
                         continue;
                     }
                 }
 
-                // Default: investigate the last body spot.
                 scheduler.ITryInterruptInvestigate(poi, replaceCurrent: true);
             }
         }
 
-
         private CharacterManager FindTargetCharacter(Ray ray)
         {
-            var hits = Physics.RaycastAll(ray, _swapRange, _characterLayerMask, _triggerInteraction);
+            var hits = Physics.RaycastAll(ray, swapRange, characterLayerMask, triggerInteraction);
             if (hits == null || hits.Length == 0) return null;
 
             Array.Sort(hits, static (a, b) => a.distance.CompareTo(b.distance));
@@ -243,7 +227,6 @@ namespace GloablGameJam.Scripts.Game
                 var cm = col.GetComponentInParent<CharacterManager>();
                 if (cm == null) continue;
                 if (cm == _currentPlayer) continue;
-
                 if (cm.IGetCharacterState() != CharacterState.NPCControlled) continue;
 
                 return cm;
@@ -261,15 +244,6 @@ namespace GloablGameJam.Scripts.Game
 
             var cm = col.GetComponentInParent<CharacterManager>();
             return cm != null && cm == _currentPlayer;
-        }
-
-        private static void SwapControl(CharacterManager fromPlayer, CharacterManager toNpc)
-        {
-            fromPlayer.ISetCharacterState(CharacterState.NPCControlled);
-            toNpc.ISetCharacterState(CharacterState.PlayerControlled);
-
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
         }
     }
 }
