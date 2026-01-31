@@ -136,6 +136,15 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DropMask"",
+                    ""type"": ""Button"",
+                    ""id"": ""4fe49d55-0fcf-48fb-b1b5-853a630dfadb"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -358,6 +367,17 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
                     ""action"": ""CharacterJump"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1c6e5903-cf2c-45cd-a3de-6eca2d925e3d"",
+                    ""path"": ""<Keyboard>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""DropMask"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -371,6 +391,7 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         m_GlobalGameJam_CharacterSprint = m_GlobalGameJam.FindAction("CharacterSprint", throwIfNotFound: true);
         m_GlobalGameJam_CharacterCrouch = m_GlobalGameJam.FindAction("CharacterCrouch", throwIfNotFound: true);
         m_GlobalGameJam_CharacterJump = m_GlobalGameJam.FindAction("CharacterJump", throwIfNotFound: true);
+        m_GlobalGameJam_DropMask = m_GlobalGameJam.FindAction("DropMask", throwIfNotFound: true);
     }
 
     ~@GGJ_PlayerInputActions()
@@ -456,6 +477,7 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
     private readonly InputAction m_GlobalGameJam_CharacterSprint;
     private readonly InputAction m_GlobalGameJam_CharacterCrouch;
     private readonly InputAction m_GlobalGameJam_CharacterJump;
+    private readonly InputAction m_GlobalGameJam_DropMask;
     /// <summary>
     /// Provides access to input actions defined in input action map "GlobalGameJam".
     /// </summary>
@@ -487,6 +509,10 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         /// Provides access to the underlying input action "GlobalGameJam/CharacterJump".
         /// </summary>
         public InputAction @CharacterJump => m_Wrapper.m_GlobalGameJam_CharacterJump;
+        /// <summary>
+        /// Provides access to the underlying input action "GlobalGameJam/DropMask".
+        /// </summary>
+        public InputAction @DropMask => m_Wrapper.m_GlobalGameJam_DropMask;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -528,6 +554,9 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
             @CharacterJump.started += instance.OnCharacterJump;
             @CharacterJump.performed += instance.OnCharacterJump;
             @CharacterJump.canceled += instance.OnCharacterJump;
+            @DropMask.started += instance.OnDropMask;
+            @DropMask.performed += instance.OnDropMask;
+            @DropMask.canceled += instance.OnDropMask;
         }
 
         /// <summary>
@@ -554,6 +583,9 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
             @CharacterJump.started -= instance.OnCharacterJump;
             @CharacterJump.performed -= instance.OnCharacterJump;
             @CharacterJump.canceled -= instance.OnCharacterJump;
+            @DropMask.started -= instance.OnDropMask;
+            @DropMask.performed -= instance.OnDropMask;
+            @DropMask.canceled -= instance.OnDropMask;
         }
 
         /// <summary>
@@ -629,5 +661,12 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnCharacterJump(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "DropMask" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDropMask(InputAction.CallbackContext context);
     }
 }

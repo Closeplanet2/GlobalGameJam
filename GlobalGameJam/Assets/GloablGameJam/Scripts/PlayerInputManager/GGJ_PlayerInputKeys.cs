@@ -8,6 +8,7 @@ namespace GloablGameJam.Scripts.PlayerInputManager
         CharacterRotation,
         CharacterSprint,
         CharacterCrouch,
-        CharacterJump
+        CharacterJump,
+        DropMask
     }
 }

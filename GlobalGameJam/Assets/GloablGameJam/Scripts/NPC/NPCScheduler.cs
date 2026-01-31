@@ -85,7 +85,7 @@ namespace GloablGameJam.Scripts.NPC
 
         private void TickMe()
         {
-            if (loopSchedule && _maxClock > 0 && _clock >= _maxClock)
+            if (_interruptStack.Count == 0 && loopSchedule && _maxClock > 0 && _clock >= _maxClock)
             {
                 _clock = 0;
             }
@@ -168,6 +168,7 @@ namespace GloablGameJam.Scripts.NPC
             _active.OnEnd(_characterManager, _clock);
             _active = null;
             _activeStarted = false;
+            if (_interruptStack.Count > 0) IResumeFromInterrupt();
         }
     }
 }
