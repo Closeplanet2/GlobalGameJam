@@ -2,7 +2,7 @@ using CustomLibrary.Scripts.Instance;
 
 namespace GloablGameJam.Scripts.Game
 {
-    public class GlobalGameJamUI : MonoBehaviourInstance<GlobalGameJam>
+    public class GlobalGameJamUI : MonoBehaviourInstance<GlobalGameJamUI>
     {
         
     }

@@ -13,84 +13,44 @@ namespace GloablGameJam.Scripts.Game
     public class GlobalGameJam : GameEventMonoBehaviorInstance<GlobalGameJam>
     {
         private GlobalGameJamUI _globalGameJamUI;
-        private bool isTryingToDropMask;
-        private float _dropMaskHoldTimer;
-        private bool _dropMaskTriggered;
-        private float _defaultFov   ;
 
         [SerializeField] private CharacterManager characterManager;
-
-        [Header("Drop Mask")]
-        [SerializeField] private float dropMaskHoldSeconds = 5f;
-        [SerializeField] private float zoomOutFov = 75f;
-        [SerializeField] private float zoomSpeed = 2f;
+        [SerializeField] private CameraMaskDrop cameraMaskDrop;
         
         protected override void Awake()
         {
             base.Awake();
             _globalGameJamUI = GetComponent<GlobalGameJamUI>();
-        }
-
-        private void Update()
-        {
-            if (characterManager == null)
+            if (cameraMaskDrop != null)
             {
-                ResetDropMaskState();
-                return;
-            }
-
-            if (!isTryingToDropMask)
-            {
-                _dropMaskHoldTimer = 0f;
-                _dropMaskTriggered = false;
-                SmoothZoomTo(_defaultFov);
-                return;
-            }
-
-            _dropMaskHoldTimer += Time.deltaTime;
-            SmoothZoomTo(zoomOutFov);
-
-            if (!_dropMaskTriggered && _dropMaskHoldTimer >= dropMaskHoldSeconds)
-            {
-                _dropMaskTriggered = true;
-                CompleteDropMask();
+                cameraMaskDrop.DroppedMask += OnDroppedMask;
             }
         }
 
         [EventHandler(Channel = PlayerInputManagerStatic.PLAYER_INPUT_MANAGER_CHANNEL, IgnoreCancelled = false)]
         public void OnPlayerInputEvent(PlayerInputEvent<GGJ_PlayerInputKeys> playerInputEvent)
         {
-            if(playerInputEvent.InputPhase == UnityEngine.InputSystem.InputActionPhase.Performed)
+            if (playerInputEvent.ActionKey != GGJ_PlayerInputKeys.DropMask) return;
+            if (cameraMaskDrop == null) return;
+            var phase = playerInputEvent.InputPhase;
+            if (phase == UnityEngine.InputSystem.InputActionPhase.Started)
             {
-                if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.DropMask && characterManager != null)
-                {
-                    isTryingToDropMask = true;
-                }
+                if (characterManager == null) return;
+                cameraMaskDrop.SetTarget(characterManager);
+                cameraMaskDrop.SetHolding(true);
             }
-            else if(playerInputEvent.InputPhase == UnityEngine.InputSystem.InputActionPhase.Canceled)
+            else if (phase == UnityEngine.InputSystem.InputActionPhase.Canceled)
             {
-                if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.DropMask) isTryingToDropMask = false;
+                cameraMaskDrop.SetHolding(false);
             }
         }
 
-        private void SmoothZoomTo(float targetFov)
+        private void OnDroppedMask(CharacterManager droppedFrom)
         {
-            var playerCamera = characterManager.ICameraManager();
-            playerCamera.IManagedCamera().fieldOfView = Mathf.Lerp(playerCamera.IManagedCamera().fieldOfView, targetFov, zoomSpeed * Time.deltaTime);
+            if (characterManager == droppedFrom)
+            {
+                characterManager = null;
+            }
         }
-
-        private void ResetDropMaskState()
-        {
-            _dropMaskHoldTimer = 0f;
-            _dropMaskTriggered = false;
-            SmoothZoomTo(_defaultFov);
-        }
-
-        private void CompleteDropMask()
-        {
-            characterManager.ISetCharacterState(CharacterState.NPCControlled);
-            characterManager = null;
-        }
-
     }
 }

@@ -371,6 +371,37 @@ Transform:
   - {fileID: 1199653503}
   m_Father: {fileID: 70913932}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &147717785
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 147717786}
+  m_Layer: 0
+  m_Name: Target
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &147717786
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 147717785}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 12.06, y: 0, z: -3.42}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2064256238}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &187056863
 GameObject:
   m_ObjectHideFlags: 0
@@ -1349,6 +1380,7 @@ GameObject:
   - component: {fileID: 729928583}
   - component: {fileID: 729928582}
   - component: {fileID: 729928581}
+  - component: {fileID: 729928585}
   m_Layer: 0
   m_Name: TestNavMesh
   m_TagString: Untagged
@@ -1450,6 +1482,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &729928585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 729928580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+  m_SerializedVersion: 0
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.16666667
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 23800000, guid: 27467bb329221aa4aaf7b64ecd50ddf8, type: 2}
+  m_BuildHeightMesh: 0
 --- !u!1 &733129369
 GameObject:
   m_ObjectHideFlags: 0
@@ -1480,55 +1544,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8619672}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &738565264
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 738565266}
-  - component: {fileID: 738565265}
-  m_Layer: 0
-  m_Name: NPCWalkScheduleItem (1)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &738565265
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 738565264}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2802cc617409bc47a331170093334ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCWalkScheduleItem
-  triggerTime: 0
-  taskDuration: 10
-  isInterruptItem: 0
-  interruptPriority: 0
-  targetWalkTarget: {x: -6.42, y: 0, z: -5.41}
---- !u!4 &738565266
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 738565264}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.8344, y: -0, z: 3.43788}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &796776613
 GameObject:
@@ -1616,6 +1631,7 @@ GameObject:
   - component: {fileID: 798754993}
   - component: {fileID: 798754992}
   - component: {fileID: 798754991}
+  - component: {fileID: 798754996}
   - component: {fileID: 798754990}
   - component: {fileID: 798754989}
   - component: {fileID: 798754988}
@@ -1750,6 +1766,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1203806082}
+  - {fileID: 1514919932}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &798754994
@@ -1764,11 +1781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  scheduleItems:
-  - {fileID: 976277748}
-  - {fileID: 738565265}
   loopSchedule: 1
-  tickIntervalSeconds: 1
 --- !u!114 &798754995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1781,9 +1794,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15837ba21ab7bf146a8859147bb0e401, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCMovement
-  moveSpeed: 2
-  rotationSpeed: 8
-  stopDistance: 0.1
+  moveSpeed: 3.5
+  angularSpeed: 720
+  stoppingDistance: 0.2
+--- !u!195 &798754996
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 798754987}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 720
+  m_StoppingDistance: 0.2
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1827,6 +1862,55 @@ Transform:
   m_GameObject: {fileID: 832575517}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &887025971
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 887025973}
+  - component: {fileID: 887025972}
+  m_Layer: 0
+  m_Name: CameraMaskDrop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &887025972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 887025971}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a18406033ae95a4abd3368f154b18e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.CameraMaskDrop
+  holdSeconds: 2
+  zoomOutFov: 75
+  zoomSpeed: 2
+  maxShakeAmplitude: 0.12
+  maxShakeFrequency: 14
+--- !u!4 &887025973
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 887025971}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2116,55 +2200,6 @@ Transform:
   - {fileID: 693459015}
   m_Father: {fileID: 9104540}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &976277747
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 976277749}
-  - component: {fileID: 976277748}
-  m_Layer: 0
-  m_Name: NPCWalkScheduleItem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &976277748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976277747}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2802cc617409bc47a331170093334ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCWalkScheduleItem
-  triggerTime: 0
-  taskDuration: 10
-  isInterruptItem: 0
-  interruptPriority: 0
-  targetWalkTarget: {x: -6.42, y: 0, z: 11.57}
---- !u!4 &976277749
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976277747}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.8344, y: -0, z: 3.43788}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1056204206
 GameObject:
   m_ObjectHideFlags: 0
@@ -2208,6 +2243,7 @@ GameObject:
   - component: {fileID: 1067891273}
   - component: {fileID: 1067891275}
   - component: {fileID: 1067891272}
+  - component: {fileID: 1067891279}
   - component: {fileID: 1067891274}
   - component: {fileID: 1067891271}
   - component: {fileID: 1067891276}
@@ -2291,6 +2327,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3835329229228036772}
+  - {fileID: 1358183225}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1067891274
@@ -2356,11 +2393,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54bf79636732429bea4919ab33d58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCScheduler
-  scheduleItems:
-  - {fileID: 976277748}
-  - {fileID: 738565265}
   loopSchedule: 1
-  tickIntervalSeconds: 1
 --- !u!114 &1067891278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2373,9 +2406,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15837ba21ab7bf146a8859147bb0e401, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCMovement
-  moveSpeed: 2
-  rotationSpeed: 8
-  stopDistance: 0.1
+  moveSpeed: 3.5
+  angularSpeed: 720
+  stoppingDistance: 0.2
+--- !u!195 &1067891279
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1067891270}
+  m_Enabled: 0
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 720
+  m_StoppingDistance: 0.2
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &1083807826
 GameObject:
   m_ObjectHideFlags: 0
@@ -2887,6 +2942,122 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1571873010}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1358183224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1358183225}
+  - component: {fileID: 1358183226}
+  m_Layer: 0
+  m_Name: NPCPatrolScheduleItem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1358183225
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358183224}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1067891273}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1358183226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1358183224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94a73079751ee394085b8a6b70789225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPatrolScheduleItem
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  points:
+  - {fileID: 147717786}
+  - {fileID: 1984983409}
+  randomStartPoint: 0
+  waitTicksAtPoint: 0
+  completeAfterOneLoop: 0
+--- !u!1 &1362661775
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1362661778}
+  - component: {fileID: 1362661777}
+  - component: {fileID: 1362661776}
+  m_Layer: 0
+  m_Name: GlobalGameJam
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1362661776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362661775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cae6162f67593dd428d72c74955f778f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.GlobalGameJam
+  allowDuplicateInstance: 0
+  allowPersistence: 0
+  characterManager: {fileID: 1067891274}
+  cameraMaskDrop: {fileID: 887025972}
+--- !u!114 &1362661777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362661775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5b579606d39a18449f2603ea7fdf210, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.GlobalGameJamUI
+  allowDuplicateInstance: 0
+  allowPersistence: 0
+--- !u!4 &1362661778
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1362661775}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1483394472
 GameObject:
   m_ObjectHideFlags: 0
@@ -2919,6 +3090,59 @@ Transform:
   - {fileID: 34013810}
   m_Father: {fileID: 964709998}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1514919931
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1514919932}
+  - component: {fileID: 1514919933}
+  m_Layer: 0
+  m_Name: NPCPatrolScheduleItem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1514919932
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1514919931}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 798754993}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1514919933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1514919931}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94a73079751ee394085b8a6b70789225, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.NPC.NPCPatrolScheduleItem
+  triggerTime: 0
+  durationTicks: 1
+  priority: 0
+  points:
+  - {fileID: 147717786}
+  - {fileID: 1984983409}
+  randomStartPoint: 0
+  waitTicksAtPoint: 0
+  completeAfterOneLoop: 0
 --- !u!1 &1533505683
 GameObject:
   m_ObjectHideFlags: 0
@@ -4330,6 +4554,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 490222030}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1984983408
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1984983409}
+  m_Layer: 0
+  m_Name: Target (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1984983409
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1984983408}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -16.73, y: 0, z: -14.09}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2064256238}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2000097979
 GameObject:
   m_ObjectHideFlags: 0
@@ -4566,6 +4821,8 @@ Transform:
   m_Children:
   - {fileID: 1973525327}
   - {fileID: 1792711962}
+  - {fileID: 147717786}
+  - {fileID: 1984983409}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2086574022
@@ -7706,9 +7963,9 @@ SceneRoots:
   - {fileID: 1743948066}
   - {fileID: 7463787358753022674}
   - {fileID: 4824849192728711648}
+  - {fileID: 1362661778}
   - {fileID: 1864029092}
-  - {fileID: 976277749}
-  - {fileID: 738565266}
+  - {fileID: 887025973}
   - {fileID: 1146931883}
   - {fileID: 1764348365}
   - {fileID: 2086574024}
