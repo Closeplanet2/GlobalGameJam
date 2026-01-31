@@ -9,6 +9,7 @@ namespace GloablGameJam.Scripts.Character
         IAnimatorController IAnimatorController();
         ICameraManager ICameraManager();
         Rigidbody ICharacterRigidbody();
+        bool ITryGetCharacterComponent<T>(out T value) where T : class, ICharacterComponent;
         void ISetCharacterState(CharacterState characterState);
     }
 }

@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78acf52f470b4b208edf3a39c0dfd5f2, type: 3}
+  m_Name: New Header Preset
+  m_EditorClassIdentifier: Plugins.Baedrick.ColoredHeaderCreator::Plugins.Baedrick.ColoredHeaderCreator.ColoredHeaderPreset
+  coloredHeaderPreset:
+  - headerText: EVENT SYSTEM
+    headerColor: {r: 0, g: 1, b: 0.63284254, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: GLOBAL SCRIPTS
+    headerColor: {r: 0.08948029, g: 0.31132078, b: 0.036712352, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: CAMERA UI
+    headerColor: {r: 0.23004338, g: 0.21239765, b: 0.4056604, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: LIGHTS
+    headerColor: {r: 0.45490196, g: 0, b: 1, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: WORLD SPACE UI
+    headerColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: GAMEOBJECT
+    headerColor: {r: 1, g: 0, b: 0.81939316, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: CAMERA
+    headerColor: {r: 1, g: 0.007843138, b: 0, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: OVERLAY UI
+    headerColor: {r: 1, g: 0.325142, b: 0, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: Post Processing
+    headerColor: {r: 0.45490196, g: 0, b: 1, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0
+  - headerText: LOCAL SCRIPTS
+    headerColor: {r: 0.19215688, g: 1, b: 0, a: 1}
+    textAlignmentOptions: 1
+    fontStyleOptions: 0
+    fontSize: 13
+    fontColor: {r: 0, g: 0, b: 0, a: 1}
+    dropShadow: 0

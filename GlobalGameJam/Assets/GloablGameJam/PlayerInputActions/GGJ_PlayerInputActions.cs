@@ -109,6 +109,33 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CharacterSprint"",
+                    ""type"": ""Button"",
+                    ""id"": ""15cd0e47-8ca1-413e-90bf-07d8208faa00"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CharacterCrouch"",
+                    ""type"": ""Button"",
+                    ""id"": ""30a2777a-62e5-456a-ad6f-395606b1e6a6"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CharacterJump"",
+                    ""type"": ""Button"",
+                    ""id"": ""a017d4a2-2c71-4cc2-9412-915f570ac4da"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -287,6 +314,50 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
                     ""action"": ""CharacterRotation"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f3714da8-9397-4dfd-a2e2-c1fa82e155b1"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CharacterSprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""19a4f562-9ced-4ebb-a8c3-3b32bea887fb"",
+                    ""path"": ""<Gamepad>/buttonEast"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CharacterSprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f94ab7a8-cc10-481b-bb63-567393c7d661"",
+                    ""path"": ""<Keyboard>/leftCtrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CharacterCrouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f8d234ea-c371-4daa-b39c-26c2d1a69317"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CharacterJump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -297,6 +368,9 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         m_GlobalGameJam = asset.FindActionMap("GlobalGameJam", throwIfNotFound: true);
         m_GlobalGameJam_CharacterMovement = m_GlobalGameJam.FindAction("CharacterMovement", throwIfNotFound: true);
         m_GlobalGameJam_CharacterRotation = m_GlobalGameJam.FindAction("CharacterRotation", throwIfNotFound: true);
+        m_GlobalGameJam_CharacterSprint = m_GlobalGameJam.FindAction("CharacterSprint", throwIfNotFound: true);
+        m_GlobalGameJam_CharacterCrouch = m_GlobalGameJam.FindAction("CharacterCrouch", throwIfNotFound: true);
+        m_GlobalGameJam_CharacterJump = m_GlobalGameJam.FindAction("CharacterJump", throwIfNotFound: true);
     }
 
     ~@GGJ_PlayerInputActions()
@@ -379,6 +453,9 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
     private List<IGlobalGameJamActions> m_GlobalGameJamActionsCallbackInterfaces = new List<IGlobalGameJamActions>();
     private readonly InputAction m_GlobalGameJam_CharacterMovement;
     private readonly InputAction m_GlobalGameJam_CharacterRotation;
+    private readonly InputAction m_GlobalGameJam_CharacterSprint;
+    private readonly InputAction m_GlobalGameJam_CharacterCrouch;
+    private readonly InputAction m_GlobalGameJam_CharacterJump;
     /// <summary>
     /// Provides access to input actions defined in input action map "GlobalGameJam".
     /// </summary>
@@ -398,6 +475,18 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         /// Provides access to the underlying input action "GlobalGameJam/CharacterRotation".
         /// </summary>
         public InputAction @CharacterRotation => m_Wrapper.m_GlobalGameJam_CharacterRotation;
+        /// <summary>
+        /// Provides access to the underlying input action "GlobalGameJam/CharacterSprint".
+        /// </summary>
+        public InputAction @CharacterSprint => m_Wrapper.m_GlobalGameJam_CharacterSprint;
+        /// <summary>
+        /// Provides access to the underlying input action "GlobalGameJam/CharacterCrouch".
+        /// </summary>
+        public InputAction @CharacterCrouch => m_Wrapper.m_GlobalGameJam_CharacterCrouch;
+        /// <summary>
+        /// Provides access to the underlying input action "GlobalGameJam/CharacterJump".
+        /// </summary>
+        public InputAction @CharacterJump => m_Wrapper.m_GlobalGameJam_CharacterJump;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -430,6 +519,15 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
             @CharacterRotation.started += instance.OnCharacterRotation;
             @CharacterRotation.performed += instance.OnCharacterRotation;
             @CharacterRotation.canceled += instance.OnCharacterRotation;
+            @CharacterSprint.started += instance.OnCharacterSprint;
+            @CharacterSprint.performed += instance.OnCharacterSprint;
+            @CharacterSprint.canceled += instance.OnCharacterSprint;
+            @CharacterCrouch.started += instance.OnCharacterCrouch;
+            @CharacterCrouch.performed += instance.OnCharacterCrouch;
+            @CharacterCrouch.canceled += instance.OnCharacterCrouch;
+            @CharacterJump.started += instance.OnCharacterJump;
+            @CharacterJump.performed += instance.OnCharacterJump;
+            @CharacterJump.canceled += instance.OnCharacterJump;
         }
 
         /// <summary>
@@ -447,6 +545,15 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
             @CharacterRotation.started -= instance.OnCharacterRotation;
             @CharacterRotation.performed -= instance.OnCharacterRotation;
             @CharacterRotation.canceled -= instance.OnCharacterRotation;
+            @CharacterSprint.started -= instance.OnCharacterSprint;
+            @CharacterSprint.performed -= instance.OnCharacterSprint;
+            @CharacterSprint.canceled -= instance.OnCharacterSprint;
+            @CharacterCrouch.started -= instance.OnCharacterCrouch;
+            @CharacterCrouch.performed -= instance.OnCharacterCrouch;
+            @CharacterCrouch.canceled -= instance.OnCharacterCrouch;
+            @CharacterJump.started -= instance.OnCharacterJump;
+            @CharacterJump.performed -= instance.OnCharacterJump;
+            @CharacterJump.canceled -= instance.OnCharacterJump;
         }
 
         /// <summary>
@@ -501,5 +608,26 @@ public partial class @GGJ_PlayerInputActions: IInputActionCollection2, IDisposab
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnCharacterRotation(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CharacterSprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCharacterSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CharacterCrouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCharacterCrouch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CharacterJump" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCharacterJump(InputAction.CallbackContext context);
     }
 }

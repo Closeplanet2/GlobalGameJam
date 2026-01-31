@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace GloablGameJam.Scripts.Player
 {
-    public class PlayerCamera : GameEventInstance
+    public class PlayerCamera : GameEventInstance, ICharacterComponent
     {
         private ICharacterManager _characterManager;
         private Vector2 _playerRotationInput;
@@ -21,30 +21,20 @@ namespace GloablGameJam.Scripts.Player
                 if(playerInputEvent.ActionKey == GGJ_PlayerInputKeys.CharacterRotation)
                 {
                     _playerRotationInput = playerInputEvent.CallbackContext.ReadValue<Vector2>();
-                    Debug.Log(_playerRotationInput);
                 }
             }
         }
 
-        public void SetICharacterManager(ICharacterManager characterManager)
+        public void ISetCharacterManager(ICharacterManager characterManager)
         {
             _characterManager = characterManager;
         }
 
-        public void HandleAllPlayerCameraRotation()
-        {
-            HandleFollowTarget();
-            HandleRotateCamera();
-        }
-
-        private void HandleFollowTarget()
+        public void IHandleCharacterComponent()
         {
             _characterManager.ICameraManager().IFollowTarget(transform);
-        }
-
-        private void HandleRotateCamera()
-        {
             _characterManager.ICameraManager().IRotateCamera(_playerRotationInput);
+            _characterManager.ICameraManager().IHandleCameraCollisions();
         }
     }
 }

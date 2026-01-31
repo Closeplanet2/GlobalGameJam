@@ -5,6 +5,9 @@ namespace GloablGameJam.Scripts.PlayerInputManager
     public enum GGJ_PlayerInputKeys
     {
         CharacterMovement,
-        CharacterRotation
+        CharacterRotation,
+        CharacterSprint,
+        CharacterCrouch,
+        CharacterJump
     }
 }

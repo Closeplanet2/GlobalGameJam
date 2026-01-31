@@ -8,5 +8,6 @@ namespace GloablGameJam.Scripts.Camera
         Transform IManagedCameraTransform() => IManagedCamera().transform;
         void IFollowTarget(Transform targetTransform);
         void IRotateCamera(Vector2 mouseInput);
+        void IHandleCameraCollisions();
     }
 }

@@ -5,6 +5,8 @@ namespace GloablGameJam.Scripts.Animation
     public enum AnimatorKey
     {
         Horizontal,
-        Vertical
+        Vertical,
+        IsInteracting,
+        IsJumping
     }
 }

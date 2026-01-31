@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using CustomLibrary.Scripts.GameEventSystem;
 using GloablGameJam.Events;
 using GloablGameJam.Scripts.Animation;
@@ -9,12 +11,9 @@ namespace GloablGameJam.Scripts.Character
 {
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
-    [RequireComponent(typeof(PlayerMovement))]
-    [RequireComponent(typeof(PlayerCamera))]
     public class CharacterManager : MonoBehaviour, ICharacterManager
     {
-        private PlayerMovement _playerMovement;
-        private PlayerCamera _playerCamera;
+        private Dictionary<Type, ICharacterComponent> _characterComponents = new();
         private Rigidbody _characterRigidBody;
 
         [Header("Character Settings")]
@@ -30,22 +29,23 @@ namespace GloablGameJam.Scripts.Character
 
         private void Awake()
         {
-            _playerMovement = GetComponent<PlayerMovement>();
-            _playerCamera = GetComponent<PlayerCamera>();
+            var monoBehaviours = GetComponents<MonoBehaviour>();
+            for (var i = 0; i < monoBehaviours.Length; i++)
+            {
+                if (monoBehaviours[i] is ICharacterComponent characterComponent)
+                {
+                    characterComponent.ISetCharacterManager(this);
+                    _characterComponents[characterComponent.GetType()] = characterComponent;
+                }
+            }
             _characterRigidBody = GetComponent<Rigidbody>();
-        }
-
-        private void Start()
-        {
-            _playerMovement.SetICharacterManager(this);
-            _playerCamera.SetICharacterManager(this);
         }
 
         private void FixedUpdate()
         {
             if(characterState == CharacterState.PlayerControlled)
             {
-                _playerMovement.HandleAllPlayerMovement();
+                if(ITryGetCharacterComponent<PlayerMovement>(out var playerMovement)) playerMovement.IHandleCharacterComponent();
             }
         }
 
@@ -53,7 +53,7 @@ namespace GloablGameJam.Scripts.Character
         {
             if(characterState == CharacterState.PlayerControlled)
             {
-                _playerCamera.HandleAllPlayerCameraRotation();
+                if(ITryGetCharacterComponent<PlayerCamera>(out var playerCamera)) playerCamera.IHandleCharacterComponent();
             }
         }
 
@@ -62,6 +62,17 @@ namespace GloablGameJam.Scripts.Character
         public ICameraManager ICameraManager() => cameraManager;
 
         public Rigidbody ICharacterRigidbody() => _characterRigidBody;
+
+        public bool ITryGetCharacterComponent<T>(out T value) where T : class, ICharacterComponent
+        {
+            if (_characterComponents.TryGetValue(typeof(T), out var component))
+            {
+                value = component as T;
+                return value != null;
+            }
+            value = null;
+            return false;
+        }
 
         public void ISetCharacterState(CharacterState characterState)
         {
