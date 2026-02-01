@@ -12,8 +12,35 @@ EditorBuildSettings:
     path: Assets/GloablGameJam/Scenes/MainScreen.unity
     guid: 37196eece41afdc45946abba635ef29a
   - enabled: 1
-    path: Assets/GloablGameJam/Scenes/Test.unity
-    guid: 8796b2afba7f06a45a4fc261bc8b86bc
+    path: Assets/GloablGameJam/Scenes/Clips/Clip_01.unity
+    guid: 8a11800a7647b434a996475fd91f3f78
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Levels/Level1.unity
+    guid: d33e13026e8ff42f1b1790f9195b65b0
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Clips/Clip_02.unity
+    guid: b38ed683ad3e3604899ce44a6f595d68
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Levels/Level2.unity
+    guid: a83aceafbf57ada4b8f32773539fdaa8
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Clips/Clip_03.unity
+    guid: 6f41531065a6bd34eb7c48441f512c87
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Levels/Level3.unity
+    guid: df7e006c3008b21458a886ef8296551a
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Clips/Clip_04.unity
+    guid: 938c2da660cfd464ebb152de936c5c97
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Levels/Level4.unity
+    guid: 522caef7bac36b44298c3ab3940b81c8
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Clips/Clip_05.unity
+    guid: a3c156eff4a4cbb48b2286a046854614
+  - enabled: 1
+    path: Assets/GloablGameJam/Scenes/Levels/Level5.unity
+    guid: 6c4a371dde067d64d81150120f5d5b9d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
