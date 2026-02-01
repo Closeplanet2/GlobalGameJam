@@ -1,4 +1,5 @@
 ﻿<Solution>
+  <Project Path="Boxophobic.Utils.Editor.csproj" />
   <Project Path="ACTk.Runtime.csproj" />
   <Project Path="AYellowpaper.SerializedCollections.csproj" />
   <Project Path="ACTk.DOTS.Examples.Runtime.csproj" />
@@ -10,8 +11,10 @@
   <Project Path="ACTk.Examples.Genuine.Runtime.csproj" />
   <Project Path="VRuler.csproj" />
   <Project Path="VHierarchy.csproj" />
+  <Project Path="Boxophobic.SkyboxCubemapExtended.Editor.csproj" />
   <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="AYellowpaper.SerializedCollections.Editor.csproj" />
+  <Project Path="Boxophobic.Utils.Scripts.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.StarterAssets.Editor.csproj" />
   <Project Path="VTabs.csproj" />
