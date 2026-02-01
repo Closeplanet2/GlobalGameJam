@@ -1,12 +1,13 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace GloablGameJam.Scripts.Game
 {
     /// <summary>
-    /// Simple "clip" scene controller: plays an audio clip over a static image (optionally animated),
-    /// then advances to the next scene (usually a gameplay level).
+    /// Clip scene controller: plays audio over a static image (optionally animated),
+    /// then advances to the next scene. Supports skip using the new Input System.
     /// </summary>
     public sealed class ClipSceneController : MonoBehaviour
     {
@@ -18,20 +19,25 @@ namespace GloablGameJam.Scripts.Game
         [Tooltip("Extra time after audio finishes before advancing.")]
         [SerializeField, Min(0f)] private float postAudioDelaySeconds = 0.25f;
 
-        [Tooltip("If true and audioSource is missing/has no clip, auto-advance after fallbackSeconds.")]
+        [Tooltip("If audioSource/clip is missing, auto-advance after fallbackSeconds.")]
         [SerializeField] private bool useFallbackTimerIfNoAudio = true;
 
         [SerializeField, Min(0f)] private float fallbackSeconds = 3.0f;
 
         [Header("Skip")]
         [SerializeField] private bool allowSkip = true;
-        [Tooltip("Any key or left mouse click will skip.")]
-        [SerializeField] private bool skipOnAnyInput = true;
+
+        [Tooltip("Skip when any key is pressed.")]
+        [SerializeField] private bool skipOnAnyKey = true;
+
+        [Tooltip("Skip when left mouse button is pressed.")]
+        [SerializeField] private bool skipOnLeftClick = true;
+
+        [Tooltip("Skip when these keys are pressed (in addition to any-key, if enabled).")]
+        [SerializeField] private Key[] extraSkipKeys = { Key.Space, Key.Escape, Key.Enter };
 
         [Header("Optional Fade")]
-        [Tooltip("If set, fades this canvas group before scene advance.")]
         [SerializeField] private CanvasGroup fadeCanvasGroup;
-
         [SerializeField, Min(0f)] private float fadeOutSeconds = 0.25f;
 
         private bool _transitioning;
@@ -57,29 +63,44 @@ namespace GloablGameJam.Scripts.Game
         {
             if (!allowSkip) return;
 
-            if (skipOnAnyInput)
+            if (IsSkipPressed())
             {
-                if (Input.anyKeyDown || Input.GetMouseButtonDown(0))
-                {
-                    Skip();
-                }
+                Skip();
             }
         }
 
         public void Skip()
         {
             if (_transitioning) return;
-            if (_routine != null) StopCoroutine(_routine);
-            _routine = StartCoroutine(AdvanceRoutine());
+
+            if (_routine != null)
+            {
+                StopCoroutine(_routine);
+                _routine = null;
+            }
+
+            StartCoroutine(AdvanceRoutine());
+        }
+
+        // Call this from Timeline/Animation event if you want.
+        public void OnClipFinished()
+        {
+            if (_transitioning) return;
+
+            if (_routine != null)
+            {
+                StopCoroutine(_routine);
+                _routine = null;
+            }
+
+            StartCoroutine(AdvanceRoutine());
         }
 
         private IEnumerator RunClipRoutine()
         {
-            // Wait for audio to finish, or fallback timer.
             if (audioSource != null && audioSource.clip != null)
             {
-                // If audio is not playing yet, wait until it starts or ends.
-                // Then wait until it stops.
+                // Wait until audio ends.
                 while (audioSource.isPlaying)
                 {
                     yield return null;
@@ -103,7 +124,6 @@ namespace GloablGameJam.Scripts.Game
             if (_transitioning) yield break;
             _transitioning = true;
 
-            // Fade out (optional)
             if (fadeCanvasGroup != null && fadeOutSeconds > 0f)
             {
                 yield return FadeOut(fadeCanvasGroup, fadeOutSeconds);
@@ -119,7 +139,7 @@ namespace GloablGameJam.Scripts.Game
 
             while (t < duration)
             {
-                t += Time.deltaTime;
+                t += Time.unscaledDeltaTime;
                 group.alpha = Mathf.Lerp(start, 0f, t / duration);
                 yield return null;
             }
@@ -134,12 +154,39 @@ namespace GloablGameJam.Scripts.Game
 
             if (nextIndex >= SceneManager.sceneCountInBuildSettings)
             {
-                // Safety fallback: go to scene 0.
                 SceneManager.LoadScene(0);
                 return;
             }
 
             SceneManager.LoadScene(nextIndex);
+        }
+
+        private bool IsSkipPressed()
+        {
+            // Keyboard / mouse may not exist on some platforms — check for null.
+            var keyboard = Keyboard.current;
+            var mouse = Mouse.current;
+
+            if (skipOnAnyKey && keyboard != null && keyboard.anyKey.wasPressedThisFrame)
+            {
+                return true;
+            }
+
+            if (skipOnLeftClick && mouse != null && mouse.leftButton.wasPressedThisFrame)
+            {
+                return true;
+            }
+
+            if (keyboard != null && extraSkipKeys != null)
+            {
+                for (var i = 0; i < extraSkipKeys.Length; i++)
+                {
+                    var key = keyboard[extraSkipKeys[i]];
+                    if (key != null && key.wasPressedThisFrame) return true;
+                }
+            }
+
+            return false;
         }
     }
 }

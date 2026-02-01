@@ -7,6 +7,7 @@ using GloablGameJam.Scripts.Character;
 using GloablGameJam.Scripts.Combat;
 using GloablGameJam.Scripts.NPC;
 using GloablGameJam.Scripts.PlayerInputManager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -35,8 +36,22 @@ namespace GloablGameJam.Scripts.Game
         [SerializeField, Min(0f)] private float globalSwapCooldownSeconds = 0.75f;
         private float _nextAllowedGlobalSwapTime;
 
+        [Header("Cooldown UI")]
+        [Tooltip("TextMeshPro that shows the global swap cooldown time left.")]
+        [SerializeField] private TMP_Text swapCooldownText;
+
+        [Tooltip("Optional object to enable/disable with the cooldown text (leave null to use text GameObject).")]
+        [SerializeField] private GameObject swapCooldownRoot;
+
         [Header("Swap Consequences")]
         [SerializeField, Min(0f)] private float leftBehindStunSeconds = 2.0f;
+
+        [Header("Interaction UI")]
+        [SerializeField] private GameObject interactionPrompt;
+
+        [Header("SFX")]
+        [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private AudioClip swapSfxClip;
 
         [Header("Debug")]
         [SerializeField] private bool log = true;
@@ -45,6 +60,7 @@ namespace GloablGameJam.Scripts.Game
         [SerializeField] private bool allowImmediateChaseOnAlert = true;
 
         private bool _handlingDeath;
+        private bool _promptVisible;
 
         protected override void Awake()
         {
@@ -64,12 +80,99 @@ namespace GloablGameJam.Scripts.Game
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+
+            SetInteractionPromptVisible(false);
+            SetCooldownUiActive(false);
         }
 
-        public CharacterManager GetCurrentPlayer()
-{
-    return _currentPlayer;
-}
+        public CharacterManager GetCurrentPlayer() => _currentPlayer;
+
+        private void Update()
+        {
+            UpdateInteractionPrompt();
+            UpdateSwapCooldownUi();
+        }
+
+        private void UpdateSwapCooldownUi()
+        {
+            if (swapCooldownText == null && swapCooldownRoot == null) return;
+
+            var remaining = Mathf.Max(0f, _nextAllowedGlobalSwapTime - Time.time);
+            var active = remaining > 0.001f;
+
+            if (!active)
+            {
+                SetCooldownUiActive(false);
+                return;
+            }
+
+            if (swapCooldownText != null)
+            {
+                // e.g. "0.7s"
+                swapCooldownText.text = $"COOLDOWN... {remaining:0.0}s";
+            }
+
+            SetCooldownUiActive(true);
+        }
+
+        private void SetCooldownUiActive(bool active)
+        {
+            if (swapCooldownRoot != null)
+            {
+                if (swapCooldownRoot.activeSelf != active) swapCooldownRoot.SetActive(active);
+                return;
+            }
+
+            if (swapCooldownText != null)
+            {
+                var go = swapCooldownText.gameObject;
+                if (go.activeSelf != active) go.SetActive(active);
+            }
+        }
+
+        private void UpdateInteractionPrompt()
+        {
+            if (interactionPrompt == null)
+            {
+                _promptVisible = false;
+                return;
+            }
+
+            if (cameraManager == null || _currentPlayer == null)
+            {
+                SetInteractionPromptVisible(false);
+                return;
+            }
+
+            // If global cooldown is active or the player body cannot swap, hide prompt.
+            if (Time.time < _nextAllowedGlobalSwapTime || !_currentPlayer.ICanBeMaskSwapped())
+            {
+                SetInteractionPromptVisible(false);
+                return;
+            }
+
+            var cam = cameraManager.IManagedCamera();
+            if (cam == null)
+            {
+                SetInteractionPromptVisible(false);
+                return;
+            }
+
+            var ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            var target = FindTargetCharacter(ray);
+
+            var show = target != null && target.ICanBeMaskSwapped();
+            SetInteractionPromptVisible(show);
+        }
+
+        private void SetInteractionPromptVisible(bool visible)
+        {
+            if (interactionPrompt == null) return;
+            if (_promptVisible == visible) return;
+
+            _promptVisible = visible;
+            interactionPrompt.SetActive(visible);
+        }
 
         private void SetCurrentPlayer(CharacterManager player)
         {
@@ -89,13 +192,6 @@ namespace GloablGameJam.Scripts.Game
             {
                 _currentPlayerHealth.Died += OnCurrentPlayerDied;
             }
-
-            // Ensure current controlled body respawns to the level's respawn point.
-            if (_currentPlayer != null && respawnPoint != null)
-            {
-                var respawner = _currentPlayer.GetComponent<PlayerRespawnController>();
-                if (respawner != null) respawner.SetRespawnPoint(respawnPoint);
-            }
         }
 
         private void OnCurrentPlayerDied(Health hp)
@@ -103,24 +199,20 @@ namespace GloablGameJam.Scripts.Game
             if (_handlingDeath) return;
             _handlingDeath = true;
 
+            SetInteractionPromptVisible(false);
+            SetCooldownUiActive(false);
+
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 
             var session = GameSessionManager.Instance;
-            var respawner = _currentPlayer != null ? _currentPlayer.GetComponent<PlayerRespawnController>() : null;
-
-            if (session != null && respawner != null)
+            if (session != null)
             {
-                session.NotifyPlayerDied(respawner);
-            }
-            else
-            {
-                // Fail-safe if misconfigured:
-                var scene = SceneManager.GetActiveScene();
-                SceneManager.LoadScene(scene.buildIndex);
+                session.NotifyPlayerDied();
+                return;
             }
 
-            _handlingDeath = false;
+            Debug.LogError("[GlobalGameJam] No GameSessionManager present! Cannot process death.");
         }
 
         [EventHandler(Channel = PlayerInputManagerStatic.PLAYER_INPUT_MANAGER_CHANNEL, IgnoreCancelled = false)]
@@ -137,7 +229,10 @@ namespace GloablGameJam.Scripts.Game
             if (cameraManager == null) return;
             if (_currentPlayer == null) return;
 
+            // Global cooldown
             if (Time.time < _nextAllowedGlobalSwapTime) return;
+
+            // Per-body cooldown (prevents instant re-swap spam between two bodies)
             if (!_currentPlayer.ICanBeMaskSwapped()) return;
 
             var cam = cameraManager.IManagedCamera();
@@ -155,15 +250,19 @@ namespace GloablGameJam.Scripts.Game
             leftBehind.ISetCharacterState(CharacterState.NPCControlled);
             target.ISetCharacterState(CharacterState.PlayerControlled);
 
+            // Set cooldowns
             _nextAllowedGlobalSwapTime = Time.time + globalSwapCooldownSeconds;
             leftBehind.IMarkMaskSwappedNow();
             target.IMarkMaskSwappedNow();
 
+            // Consequence
             leftBehind.IStun(leftBehindStunSeconds);
 
             AlertAllNpcs(leftBehind.transform.position);
 
             SetCurrentPlayer(target);
+
+            PlaySfx(swapSfxClip);
 
             // Unlock key if this body grants one
             var session = GameSessionManager.Instance;
@@ -179,6 +278,13 @@ namespace GloablGameJam.Scripts.Game
             {
                 Debug.Log($"[MaskSwap] now '{target.name}', left '{leftBehind.name}'", this);
             }
+        }
+
+        private void PlaySfx(AudioClip clip)
+        {
+            if (clip == null) return;
+            if (sfxSource == null) return;
+            sfxSource.PlayOneShot(clip);
         }
 
         private void AlertAllNpcs(Vector3 poi)

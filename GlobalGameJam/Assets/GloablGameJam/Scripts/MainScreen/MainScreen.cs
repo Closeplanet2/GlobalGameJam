@@ -55,6 +55,9 @@ public sealed class MainMenu : MonoBehaviour, IPointerEnterHandler, IPointerExit
         _phase = phaseOffset * Mathf.PI * 2f;
 
         ApplyScale(normalScale);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void OnEnable()
