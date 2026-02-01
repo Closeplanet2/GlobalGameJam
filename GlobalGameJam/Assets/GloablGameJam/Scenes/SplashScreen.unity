@@ -757,12 +757,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e23982152279454c9e08696a0b7a65e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GloablGameJam.Scripts.Game.GameSessionManager
-  maxHearts: 3
-  requiredKeys: 3
+  maxHearts: 1
+  requiredKeys: 1
   mainMenuSceneName: MainScreen
   firstClipSceneName: Clip_01
   finalLevelSceneName: Level_05
   levelScenePrefix: Level_
+  trackRunTime: 1
   sfxSource: {fileID: 1172027550}
   loseHeartClip: {fileID: 8300000, guid: c731d91c14f2f1b4694c18f8f4c04fe7, type: 3}
   gainKeyClip: {fileID: 8300000, guid: c731d91c14f2f1b4694c18f8f4c04fe7, type: 3}

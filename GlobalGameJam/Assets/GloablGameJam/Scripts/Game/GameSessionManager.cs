@@ -9,13 +9,19 @@ namespace GloablGameJam.Scripts.Game
     /// <summary>
     /// Persistent run/session manager.
     ///
-    /// Rules:
-    /// - Hearts persist across clip + level scenes until the run ends.
-    /// - Keys reset to 0 whenever a level scene loads/reloads.
-    /// - On player death: lose 1 heart; if hearts remain, reload current scene; if 0, go to MainMenu.
-    /// - When keys reach requiredKeys in a level: advance to next scene.
-    /// - When final level completes: go back to MainMenu.
-    /// - Run timer starts on Play and persists across all scenes in the run.
+    /// Run rules (as requested):
+    /// - Start of run: 3 hearts, 0 keys, timer = 0.
+    /// - Hearts persist across level changes within the same run.
+    /// - Keys reset to 0 whenever a LEVEL scene loads/reloads (clip scenes do not affect keys).
+    /// - On death: lose 1 heart and reload the current scene.
+    /// - If hearts reach 0: go back to MainMenu (and end the run).
+    /// - If keys reach requiredKeys: advance to next scene.
+    /// - If final level is completed: go back to MainMenu (end run).
+    /// - Run timer pauses during clip scenes (ClipSceneController calls SetRunTimerPaused).
+    ///
+    /// Notes:
+    /// - This manager should exist ONCE (usually in MainMenu) and uses DontDestroyOnLoad.
+    /// - UI should listen to events and/or force-refresh on enable/scene load.
     /// </summary>
     public sealed class GameSessionManager : MonoBehaviour
     {
@@ -30,11 +36,13 @@ namespace GloablGameJam.Scripts.Game
         [SerializeField] private string firstClipSceneName = "Clip_01";
         [SerializeField] private string finalLevelSceneName = "Level_05";
 
-        [Header("Scene Rules")]
+        [Header("Scene Classification")]
         [Tooltip("Only scenes starting with this prefix are considered gameplay levels (keys reset here).")]
         [SerializeField] private string levelScenePrefix = "Level_";
+        [Tooltip("Optional: treat scenes starting with this prefix as clip scenes (timer auto-pauses).")]
+        [SerializeField] private string clipScenePrefix = "Clip_";
 
-        [Header("Run Timer")]
+        [Header("Timer")]
         [SerializeField] private bool trackRunTime = true;
 
         [Header("SFX")]
@@ -47,20 +55,27 @@ namespace GloablGameJam.Scripts.Game
         private int _heartsRemaining;
         private readonly HashSet<string> _unlockedKeys = new(StringComparer.Ordinal);
 
-        private bool _isTransitioningToMenu;
-
         private float _runTimeSeconds;
         private bool _runTimerActive;
+        private bool _runTimerPaused;
+
+        // Guards to stop double-death / double-load issues.
+        private bool _isSceneTransitionInProgress;
+        private bool _isEndingRunToMenu;
 
         public int HeartsRemaining => _heartsRemaining;
         public int KeysUnlocked => _unlockedKeys.Count;
         public int KeysRequired => requiredKeys;
 
         public float RunTimeSeconds => _runTimeSeconds;
+        public bool IsRunTimerPaused => _runTimerPaused;
+        public bool IsRunActive => _runTimerActive;
 
         public event Action<int> HeartsChanged;
         public event Action<int, int> KeysChanged; // unlocked, required
         public event Action<float> RunTimeUpdated;
+        public event Action<bool> RunTimerPausedChanged;
+
         public event Action LevelCompleted;
         public event Action GameOver;
 
@@ -77,15 +92,11 @@ namespace GloablGameJam.Scripts.Game
 
             SceneManager.sceneLoaded += OnSceneLoaded;
 
-            // Default safe state (menu).
-            _heartsRemaining = maxHearts;
-            _unlockedKeys.Clear();
-            _isTransitioningToMenu = false;
+            // Safe default (menu state).
+            ResetRunStateInternal(setTimerActive: false);
+            _isSceneTransitionInProgress = false;
+            _isEndingRunToMenu = false;
 
-            _runTimeSeconds = 0f;
-            _runTimerActive = false;
-
-            // Useful to detect duplicates (should log only once per app session).
             Debug.Log($"[GameSessionManager] Awake in scene '{SceneManager.GetActiveScene().name}'", this);
         }
 
@@ -99,70 +110,56 @@ namespace GloablGameJam.Scripts.Game
 
         private void Update()
         {
-            if (!_runTimerActive || !trackRunTime) return;
+            if (!trackRunTime) return;
+            if (!_runTimerActive) return;
+            if (_runTimerPaused) return;
 
             _runTimeSeconds += Time.unscaledDeltaTime;
             RunTimeUpdated?.Invoke(_runTimeSeconds);
         }
 
         /// <summary>
-        /// Called by Main Menu Play button.
-        /// Resets run state and loads the first clip scene.
+        /// Main Menu "Play" button should call this.
+        /// Fully resets the run, then loads the first clip scene.
         /// </summary>
         public void StartNewRun()
         {
-            _isTransitioningToMenu = false;
+            _isEndingRunToMenu = false;
+            _isSceneTransitionInProgress = false;
 
-            _heartsRemaining = maxHearts;
-            _unlockedKeys.Clear();
+            ResetRunStateInternal(setTimerActive: true);
 
-            _runTimeSeconds = 0f;
-            _runTimerActive = true;
-
+            // Force UI refresh immediately.
             HeartsChanged?.Invoke(_heartsRemaining);
             KeysChanged?.Invoke(KeysUnlocked, requiredKeys);
             RunTimeUpdated?.Invoke(_runTimeSeconds);
+            RunTimerPausedChanged?.Invoke(_runTimerPaused);
 
             SceneManager.LoadScene(firstClipSceneName);
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        /// <summary>
+        /// Pause/unpause the run timer (used by ClipSceneController).
+        /// </summary>
+        public void SetRunTimerPaused(bool paused)
         {
-            // Keys reset whenever a level scene loads/reloads.
-            if (IsLevelScene(scene.name))
-            {
-                _unlockedKeys.Clear();
-                KeysChanged?.Invoke(KeysUnlocked, requiredKeys);
-            }
+            if (_runTimerPaused == paused) return;
 
-            // Menu: show 0 keys, stop timer.
-            if (string.Equals(scene.name, mainMenuSceneName, StringComparison.OrdinalIgnoreCase))
-            {
-                _unlockedKeys.Clear();
-                KeysChanged?.Invoke(KeysUnlocked, requiredKeys);
+            _runTimerPaused = paused;
+            RunTimerPausedChanged?.Invoke(_runTimerPaused);
 
-                _isTransitioningToMenu = false;
-                _runTimerActive = false;
-            }
-
-            // Always refresh hearts/timer for HUD after any scene load.
-            HeartsChanged?.Invoke(_heartsRemaining);
+            // Push current time to keep HUD consistent.
             RunTimeUpdated?.Invoke(_runTimeSeconds);
         }
 
-        public bool IsLevelScene(string sceneName)
-        {
-            return !string.IsNullOrWhiteSpace(sceneName) &&
-                   sceneName.StartsWith(levelScenePrefix, StringComparison.OrdinalIgnoreCase);
-        }
-
         /// <summary>
-        /// Unlocks a unique key id for the current level.
-        /// When enough keys are unlocked, completes the level and advances.
+        /// Called when a key is earned (e.g. body swap into key NPC).
+        /// When enough keys are unlocked for the level, advances to next scene.
         /// </summary>
         public bool TryUnlockKey(string keyId)
         {
-            if (_isTransitioningToMenu) return false;
+            if (_isEndingRunToMenu) return false;
+            if (_isSceneTransitionInProgress) return false;
             if (string.IsNullOrWhiteSpace(keyId)) return false;
 
             if (!_unlockedKeys.Add(keyId)) return false;
@@ -174,19 +171,21 @@ namespace GloablGameJam.Scripts.Game
             {
                 LevelCompleted?.Invoke();
                 PlaySfx(levelCompleteClip);
-                LoadNextSceneOrMenu();
+
+                StartCoroutine(AdvanceNextFrame());
             }
 
             return true;
         }
 
         /// <summary>
-        /// Player death: lose a heart. If hearts remain, reload current scene.
-        /// If no hearts remain, go back to main menu and end the run.
+        /// Called by GlobalGameJam when the controlled body dies.
+        /// Applies heart loss and reloads the scene or ends the run.
         /// </summary>
         public void NotifyPlayerDied()
         {
-            if (_isTransitioningToMenu) return;
+            if (_isEndingRunToMenu) return;
+            if (_isSceneTransitionInProgress) return;
 
             _heartsRemaining = Mathf.Max(0, _heartsRemaining - 1);
             HeartsChanged?.Invoke(_heartsRemaining);
@@ -194,60 +193,143 @@ namespace GloablGameJam.Scripts.Game
 
             if (_heartsRemaining <= 0)
             {
-                _isTransitioningToMenu = true;
-                _runTimerActive = false;
-
-                GameOver?.Invoke();
-                PlaySfx(gameOverClip);
-
-                // Defer to next frame so no other reload call can "win".
-                StartCoroutine(LoadMainMenuNextFrame());
+                EndRunToMenu();
                 return;
             }
 
-            ReloadActiveScene();
+            StartCoroutine(ReloadSceneNextFrame());
         }
 
-        private IEnumerator LoadMainMenuNextFrame()
+        public void LoadMainMenu()
+        {
+            EndRunToMenu();
+        }
+
+        private void EndRunToMenu()
+        {
+            if (_isEndingRunToMenu) return;
+
+            _isEndingRunToMenu = true;
+            _isSceneTransitionInProgress = true;
+
+            _runTimerActive = false;
+            _runTimerPaused = false;
+            RunTimerPausedChanged?.Invoke(_runTimerPaused);
+
+            GameOver?.Invoke();
+            PlaySfx(gameOverClip);
+
+            StartCoroutine(LoadMenuNextFrame());
+        }
+
+        private IEnumerator LoadMenuNextFrame()
         {
             yield return null;
             SceneManager.LoadScene(mainMenuSceneName);
         }
 
-        public void LoadMainMenu()
+        private IEnumerator ReloadSceneNextFrame()
         {
-            _isTransitioningToMenu = true;
-            _runTimerActive = false;
-            SceneManager.LoadScene(mainMenuSceneName);
-        }
+            _isSceneTransitionInProgress = true;
+            yield return null;
 
-        private void ReloadActiveScene()
-        {
             var active = SceneManager.GetActiveScene();
             SceneManager.LoadScene(active.buildIndex);
         }
 
-        private void LoadNextSceneOrMenu()
+        private IEnumerator AdvanceNextFrame()
         {
+            _isSceneTransitionInProgress = true;
+            yield return null;
+
             var active = SceneManager.GetActiveScene();
 
+            // If this is the final level, end run to menu.
             if (string.Equals(active.name, finalLevelSceneName, StringComparison.OrdinalIgnoreCase))
             {
                 _runTimerActive = false;
-                LoadMainMenu();
-                return;
+                _runTimerPaused = false;
+                RunTimerPausedChanged?.Invoke(_runTimerPaused);
+
+                SceneManager.LoadScene(mainMenuSceneName);
+                yield break;
             }
 
             var nextIndex = active.buildIndex + 1;
-
             if (nextIndex >= SceneManager.sceneCountInBuildSettings)
             {
                 _runTimerActive = false;
-                LoadMainMenu();
-                return;
+                _runTimerPaused = false;
+                RunTimerPausedChanged?.Invoke(_runTimerPaused);
+
+                SceneManager.LoadScene(mainMenuSceneName);
+                yield break;
             }
 
             SceneManager.LoadScene(nextIndex);
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            _isSceneTransitionInProgress = false;
+
+            // If we reached the menu, ensure run is not active and keys show 0.
+            if (string.Equals(scene.name, mainMenuSceneName, StringComparison.OrdinalIgnoreCase))
+            {
+                _unlockedKeys.Clear();
+                KeysChanged?.Invoke(KeysUnlocked, requiredKeys);
+
+                _runTimerActive = false;
+                _runTimerPaused = false;
+                RunTimerPausedChanged?.Invoke(_runTimerPaused);
+
+                HeartsChanged?.Invoke(_heartsRemaining);
+                RunTimeUpdated?.Invoke(_runTimeSeconds);
+
+                // Allow new run again.
+                _isEndingRunToMenu = false;
+                return;
+            }
+
+            // Auto-pause timer on clip scenes if you use a prefix naming convention.
+            // (ClipSceneController can still explicitly call SetRunTimerPaused(true/false).)
+            if (IsClipScene(scene.name))
+            {
+                SetRunTimerPaused(true);
+            }
+
+            // Reset keys only on LEVEL scenes (including reloads).
+            if (IsLevelScene(scene.name))
+            {
+                _unlockedKeys.Clear();
+                KeysChanged?.Invoke(KeysUnlocked, requiredKeys);
+            }
+
+            // Always push hearts/time so HUD can re-render after load.
+            HeartsChanged?.Invoke(_heartsRemaining);
+            RunTimeUpdated?.Invoke(_runTimeSeconds);
+        }
+
+        public bool IsLevelScene(string sceneName)
+        {
+            return !string.IsNullOrWhiteSpace(sceneName) &&
+                   sceneName.StartsWith(levelScenePrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool IsClipScene(string sceneName)
+        {
+            return !string.IsNullOrWhiteSpace(sceneName) &&
+                   sceneName.StartsWith(clipScenePrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ResetRunStateInternal(bool setTimerActive)
+        {
+            _heartsRemaining = maxHearts;
+            _unlockedKeys.Clear();
+
+            _runTimeSeconds = 0f;
+            _runTimerActive = setTimerActive;
+            _runTimerPaused = false;
         }
 
         private void PlaySfx(AudioClip clip)
